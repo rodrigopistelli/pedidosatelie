@@ -1,0 +1,72 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f1f3f6;
+  color: #222;
+}
+a { color: inherit; }
+.container { max-width: 1050px; margin: 0 auto; padding: 24px; }
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+  margin-bottom: 16px;
+}
+h1, h2 { margin: 0 0 12px; }
+.btn {
+  background: #2563eb;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.btn:hover { background: #1d4ed8; }
+.btn.secondary { background: #6b7280; }
+.btn.danger { background: #dc2626; }
+.btn.small { padding: 6px 10px; font-size: 13px; }
+input, select, textarea {
+  width: 100%;
+  padding: 10px;
+  margin: 4px 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+}
+label { font-size: 13px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
+th { background: #f8fafc; }
+.toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.toolbar input { max-width: 300px; margin: 0; }
+.nav {
+  background: #111827;
+  color: #fff;
+  padding: 12px 24px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.nav a { text-decoration: none; padding: 8px 12px; border-radius: 8px; }
+.nav a.active, .nav a:hover { background: #374151; }
+.nav .spacer { flex: 1; }
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  padding: 16px;
+}
+.login-box { width: 100%; max-width: 380px; }
+.error { background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+.row-actions { display: flex; gap: 8px; }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.kpis .card { text-align: center; margin: 0; }
+.kpis strong { font-size: 26px; display: block; }
+@media (max-width: 700px) { .kpis { grid-template-columns: 1fr; } }
