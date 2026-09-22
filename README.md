@@ -36,3 +36,11 @@ npm.cmd run dev
   - Total calculado no backend a partir do preço do cardápio.
 
 Banco SQLite em `server/database.db` (criado automaticamente).
+Sem `DATABASE_URL`, usa SQLite local. Com `DATABASE_URL`, usa Postgres (Neon).
+
+## Deploy gratuito (Vercel + Render + Neon)
+
+Guia passo a passo em [DEPLOY.md](./DEPLOY.md).
+Resumo: Neon (banco) → Render Blueprint com `render.yaml` (API) →
+Vercel com Root `client` + `VITE_API_URL` (frontend) → voltar no Render e
+preencher `FRONTEND_URL` com a URL do Vercel.

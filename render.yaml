@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: projeto01-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false # cole a connection string do Neon no dashboard do Render
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false # ex: https://projeto01.vercel.app (atualize após criar o frontend)

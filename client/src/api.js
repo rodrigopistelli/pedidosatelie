@@ -1,4 +1,6 @@
-const API = "";
+// Em dev (Vite proxy) fica vazio e usa caminho relativo.
+// Em produção (Vercel), defina VITE_API_URL=https://sua-api.onrender.com (sem barra no final).
+const API = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 function getToken() {
   return localStorage.getItem("token");

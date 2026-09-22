@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.env
 database.db*
 *.db-journal
 *.db-wal

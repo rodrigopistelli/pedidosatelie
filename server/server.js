@@ -2,63 +2,25 @@ import express from "express";
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { DatabaseSync } from "node:sqlite";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { initDb, all, get, run, insert } from "./db.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || "projeto01-secret-dev";
 
-app.use(cors());
+// Em produção, defina FRONTEND_URL com a URL do Vercel (pode ser lista separada por vírgula).
+// Sem ela (dev local), libera qualquer origem.
+const allowed = (process.env.FRONTEND_URL || "").split(",").map((s) => s.trim()).filter(Boolean);
+app.use(cors({ origin: allowed.length ? allowed : true }));
 app.use(express.json());
 
-// ---- SQLite (nativo do Node 22+, sem compilação) ----
-const db = new DatabaseSync(path.join(__dirname, "database.db"));
-
-db.exec(`
-  PRAGMA journal_mode = WAL;
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    created_at TEXT DEFAULT (datetime('now'))
-  );
-  CREATE TABLE IF NOT EXISTS clientes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    telefone TEXT NOT NULL,
-    endereco TEXT NOT NULL,
-    created_at TEXT DEFAULT (datetime('now'))
-  );
-  CREATE TABLE IF NOT EXISTS cardapios (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    descricao TEXT DEFAULT '',
-    preco REAL NOT NULL DEFAULT 0,
-    created_at TEXT DEFAULT (datetime('now'))
-  );
-  CREATE TABLE IF NOT EXISTS pedidos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cliente_id INTEGER NOT NULL REFERENCES clientes(id) ON DELETE RESTRICT,
-    cardapio_id INTEGER NOT NULL REFERENCES cardapios(id) ON DELETE RESTRICT,
-    quantidade INTEGER NOT NULL DEFAULT 1,
-    preco_unitario REAL NOT NULL DEFAULT 0,
-    total REAL NOT NULL DEFAULT 0,
-    data TEXT NOT NULL DEFAULT (date('now')),
-    observacao TEXT DEFAULT '',
-    created_at TEXT DEFAULT (datetime('now'))
-  );
-`);
+await initDb();
 
 // Seed: usuário admin / admin123
-const adminRow = db.prepare("SELECT id FROM users WHERE username = ?").get("admin");
+const adminRow = await get("SELECT id FROM users WHERE username = ?", ["admin"]);
 if (!adminRow) {
   const hash = bcrypt.hashSync("admin123", 10);
-  db.prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)").run("admin", hash);
+  await run("INSERT INTO users (username, password_hash) VALUES (?, ?)", ["admin", hash]);
   console.log("Usuário seed criado -> login: admin | senha: admin123");
 }
 
@@ -75,7 +37,20 @@ function auth(req, res, next) {
   }
 }
 
-app.post("/api/register", (req, res) => {
+// Wrapper para rotas async (erros caem no middleware de erro)
+const ah = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+const validId = (v) => Number.isInteger(Number(v)) && Number(v) > 0;
+
+// Normaliza data vinda do Postgres (Date) para "YYYY-MM-DD" como no SQLite
+function fmtDate(d) {
+  if (d instanceof Date) return d.toISOString().slice(0, 10);
+  if (typeof d === "string" && d.includes("T")) return d.slice(0, 10);
+  return d;
+}
+const mapPedido = (p) => (p ? { ...p, data: fmtDate(p.data) } : p);
+
+app.post("/api/register", ah(async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password)
     return res.status(400).json({ error: "Informe usuário e senha" });
@@ -83,160 +58,142 @@ app.post("/api/register", (req, res) => {
     return res.status(400).json({ error: "Senha deve ter ao menos 4 caracteres" });
   try {
     const hash = bcrypt.hashSync(String(password), 10);
-    const r = db
-      .prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)")
-      .run(String(username).trim(), hash);
-    const token = jwt.sign({ id: Number(r.lastInsertRowid), username }, JWT_SECRET, { expiresIn: "12h" });
+    const id = await insert("INSERT INTO users (username, password_hash) VALUES (?, ?)", [String(username).trim(), hash]);
+    const token = jwt.sign({ id, username }, JWT_SECRET, { expiresIn: "12h" });
     res.status(201).json({ token, username });
   } catch (e) {
-    if (String(e.message).includes("UNIQUE"))
+    if (String(e.message).includes("UNIQUE") || String(e.message).includes("duplicate"))
       return res.status(409).json({ error: "Usuário já existe" });
-    res.status(500).json({ error: "Erro ao registrar" });
+    throw e;
   }
-});
+}));
 
-app.post("/api/login", (req, res) => {
+app.post("/api/login", ah(async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password)
     return res.status(400).json({ error: "Informe usuário e senha" });
-  const user = db.prepare("SELECT * FROM users WHERE username = ?").get(String(username).trim());
+  const user = await get("SELECT * FROM users WHERE username = ?", [String(username).trim()]);
   if (!user) return res.status(401).json({ error: "Usuário ou senha inválidos" });
   const ok = bcrypt.compareSync(String(password), user.password_hash);
   if (!ok) return res.status(401).json({ error: "Usuário ou senha inválidos" });
   const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: "12h" });
   res.json({ token, username: user.username });
-});
+}));
 
 app.get("/api/me", auth, (req, res) => {
   res.json({ user: req.user });
 });
 
-// ---- Helpers CRUD ----
-const validId = (v) => Number.isInteger(Number(v)) && Number(v) > 0;
-
 // ---- Clientes ----
-app.get("/api/clientes", auth, (req, res) => {
+app.get("/api/clientes", auth, ah(async (req, res) => {
   const q = (req.query.q || "").toString().trim();
-  let rows;
-  if (q) {
-    rows = db.prepare(
-      "SELECT * FROM clientes WHERE nome LIKE ? OR telefone LIKE ? OR endereco LIKE ? ORDER BY id DESC"
-    ).all(`%${q}%`, `%${q}%`, `%${q}%`);
-  } else {
-    rows = db.prepare("SELECT * FROM clientes ORDER BY id DESC").all();
-  }
+  const rows = q
+    ? await all(
+        "SELECT * FROM clientes WHERE nome LIKE ? OR telefone LIKE ? OR endereco LIKE ? ORDER BY id DESC",
+        [`%${q}%`, `%${q}%`, `%${q}%`]
+      )
+    : await all("SELECT * FROM clientes ORDER BY id DESC");
   res.json(rows);
-});
+}));
 
-app.post("/api/clientes", auth, (req, res) => {
+app.post("/api/clientes", auth, ah(async (req, res) => {
   const { nome, telefone, endereco } = req.body || {};
   if (!nome?.trim() || !telefone?.trim() || !endereco?.trim())
     return res.status(400).json({ error: "Nome, telefone e endereço são obrigatórios" });
-  const r = db.prepare("INSERT INTO clientes (nome, telefone, endereco) VALUES (?, ?, ?)")
-    .run(nome.trim(), telefone.trim(), endereco.trim());
-  res.status(201).json(db.prepare("SELECT * FROM clientes WHERE id = ?").get(Number(r.lastInsertRowid)));
-});
+  const id = await insert("INSERT INTO clientes (nome, telefone, endereco) VALUES (?, ?, ?)", [nome.trim(), telefone.trim(), endereco.trim()]);
+  res.status(201).json(await get("SELECT * FROM clientes WHERE id = ?", [id]));
+}));
 
-app.put("/api/clientes/:id", auth, (req, res) => {
+app.put("/api/clientes/:id", auth, ah(async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ error: "ID inválido" });
   const { nome, telefone, endereco } = req.body || {};
   if (!nome?.trim() || !telefone?.trim() || !endereco?.trim())
     return res.status(400).json({ error: "Nome, telefone e endereço são obrigatórios" });
-  db.prepare("UPDATE clientes SET nome=?, telefone=?, endereco=? WHERE id=?")
-    .run(nome.trim(), telefone.trim(), endereco.trim(), Number(req.params.id));
-  res.json(db.prepare("SELECT * FROM clientes WHERE id = ?").get(Number(req.params.id)));
-});
+  await run("UPDATE clientes SET nome=?, telefone=?, endereco=? WHERE id=?", [nome.trim(), telefone.trim(), endereco.trim(), Number(req.params.id)]);
+  res.json(await get("SELECT * FROM clientes WHERE id = ?", [Number(req.params.id)]));
+}));
 
-app.delete("/api/clientes/:id", auth, (req, res) => {
+app.delete("/api/clientes/:id", auth, ah(async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ error: "ID inválido" });
-  const emUso = db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE cliente_id = ?").get(Number(req.params.id));
-  if (emUso.c > 0) return res.status(409).json({ error: "Cliente possui pedidos e não pode ser excluído" });
-  db.prepare("DELETE FROM clientes WHERE id = ?").run(Number(req.params.id));
+  const emUso = await get("SELECT COUNT(*) AS c FROM pedidos WHERE cliente_id = ?", [Number(req.params.id)]);
+  if (Number(emUso.c) > 0) return res.status(409).json({ error: "Cliente possui pedidos e não pode ser excluído" });
+  await run("DELETE FROM clientes WHERE id = ?", [Number(req.params.id)]);
   res.json({ ok: true });
-});
+}));
 
 // ---- Cardápios ----
-app.get("/api/cardapios", auth, (req, res) => {
+app.get("/api/cardapios", auth, ah(async (req, res) => {
   const q = (req.query.q || "").toString().trim();
-  let rows;
-  if (q) {
-    rows = db.prepare("SELECT * FROM cardapios WHERE nome LIKE ? OR descricao LIKE ? ORDER BY id DESC")
-      .all(`%${q}%`, `%${q}%`);
-  } else {
-    rows = db.prepare("SELECT * FROM cardapios ORDER BY id DESC").all();
-  }
+  const rows = q
+    ? await all("SELECT * FROM cardapios WHERE nome LIKE ? OR descricao LIKE ? ORDER BY id DESC", [`%${q}%`, `%${q}%`])
+    : await all("SELECT * FROM cardapios ORDER BY id DESC");
   res.json(rows);
-});
+}));
 
-app.post("/api/cardapios", auth, (req, res) => {
+app.post("/api/cardapios", auth, ah(async (req, res) => {
   const { nome, descricao = "", preco } = req.body || {};
   const precoNum = Number(preco);
   if (!nome?.trim()) return res.status(400).json({ error: "Nome é obrigatório" });
   if (!Number.isFinite(precoNum) || precoNum < 0)
     return res.status(400).json({ error: "Preço inválido" });
-  const r = db.prepare("INSERT INTO cardapios (nome, descricao, preco) VALUES (?, ?, ?)")
-    .run(nome.trim(), String(descricao).trim(), precoNum);
-  res.status(201).json(db.prepare("SELECT * FROM cardapios WHERE id = ?").get(Number(r.lastInsertRowid)));
-});
+  const id = await insert("INSERT INTO cardapios (nome, descricao, preco) VALUES (?, ?, ?)", [nome.trim(), String(descricao).trim(), precoNum]);
+  res.status(201).json(await get("SELECT * FROM cardapios WHERE id = ?", [id]));
+}));
 
-app.put("/api/cardapios/:id", auth, (req, res) => {
+app.put("/api/cardapios/:id", auth, ah(async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ error: "ID inválido" });
   const { nome, descricao = "", preco } = req.body || {};
   const precoNum = Number(preco);
   if (!nome?.trim()) return res.status(400).json({ error: "Nome é obrigatório" });
   if (!Number.isFinite(precoNum) || precoNum < 0)
     return res.status(400).json({ error: "Preço inválido" });
-  db.prepare("UPDATE cardapios SET nome=?, descricao=?, preco=? WHERE id=?")
-    .run(nome.trim(), String(descricao).trim(), precoNum, Number(req.params.id));
-  res.json(db.prepare("SELECT * FROM cardapios WHERE id = ?").get(Number(req.params.id)));
-});
+  await run("UPDATE cardapios SET nome=?, descricao=?, preco=? WHERE id=?", [nome.trim(), String(descricao).trim(), precoNum, Number(req.params.id)]);
+  res.json(await get("SELECT * FROM cardapios WHERE id = ?", [Number(req.params.id)]));
+}));
 
-app.delete("/api/cardapios/:id", auth, (req, res) => {
+app.delete("/api/cardapios/:id", auth, ah(async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ error: "ID inválido" });
-  const emUso = db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE cardapio_id = ?").get(Number(req.params.id));
-  if (emUso.c > 0) return res.status(409).json({ error: "Cardápio possui pedidos e não pode ser excluído" });
-  db.prepare("DELETE FROM cardapios WHERE id = ?").run(Number(req.params.id));
+  const emUso = await get("SELECT COUNT(*) AS c FROM pedidos WHERE cardapio_id = ?", [Number(req.params.id)]);
+  if (Number(emUso.c) > 0) return res.status(409).json({ error: "Cardápio possui pedidos e não pode ser excluído" });
+  await run("DELETE FROM cardapios WHERE id = ?", [Number(req.params.id)]);
   res.json({ ok: true });
-});
+}));
 
 // ---- Pedidos ----
-app.get("/api/pedidos", auth, (req, res) => {
-  const rows = db.prepare(`
-    SELECT p.*, c.nome AS cliente_nome, m.nome AS cardapio_nome
-    FROM pedidos p
-    JOIN clientes c ON c.id = p.cliente_id
-    JOIN cardapios m ON m.id = p.cardapio_id
-    ORDER BY p.id DESC
-  `).all();
-  res.json(rows);
-});
+const PEDIDO_JOIN = `
+  SELECT p.*, c.nome AS cliente_nome, m.nome AS cardapio_nome
+  FROM pedidos p
+  JOIN clientes c ON c.id = p.cliente_id
+  JOIN cardapios m ON m.id = p.cardapio_id
+`;
 
-app.post("/api/pedidos", auth, (req, res) => {
+app.get("/api/pedidos", auth, ah(async (req, res) => {
+  const rows = await all(`${PEDIDO_JOIN} ORDER BY p.id DESC`);
+  res.json(rows.map(mapPedido));
+}));
+
+app.post("/api/pedidos", auth, ah(async (req, res) => {
   const { cliente_id, cardapio_id, quantidade, data, observacao = "" } = req.body || {};
   const qtd = Number(quantidade);
   if (!validId(cliente_id)) return res.status(400).json({ error: "Selecione o cliente" });
   if (!validId(cardapio_id)) return res.status(400).json({ error: "Selecione o cardápio" });
   if (!Number.isInteger(qtd) || qtd <= 0)
     return res.status(400).json({ error: "Quantidade deve ser maior que zero" });
-  const cliente = db.prepare("SELECT id FROM clientes WHERE id = ?").get(Number(cliente_id));
+  const cliente = await get("SELECT id FROM clientes WHERE id = ?", [Number(cliente_id)]);
   if (!cliente) return res.status(400).json({ error: "Cliente não encontrado" });
-  const item = db.prepare("SELECT * FROM cardapios WHERE id = ?").get(Number(cardapio_id));
+  const item = await get("SELECT * FROM cardapios WHERE id = ?", [Number(cardapio_id)]);
   if (!item) return res.status(400).json({ error: "Cardápio não encontrado" });
   const precoUnit = Number(item.preco);
-  const total = precoUnit * qtd;
+  const total = Math.round(precoUnit * qtd * 100) / 100;
   const dataFinal = data ? String(data) : new Date().toISOString().slice(0, 10);
-  const r = db.prepare(
-    "INSERT INTO pedidos (cliente_id, cardapio_id, quantidade, preco_unitario, total, data, observacao) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).run(Number(cliente_id), Number(cardapio_id), qtd, precoUnit, total, dataFinal, String(observacao).trim());
-  const created = db.prepare(`
-    SELECT p.*, c.nome AS cliente_nome, m.nome AS cardapio_nome
-    FROM pedidos p JOIN clientes c ON c.id=p.cliente_id JOIN cardapios m ON m.id=p.cardapio_id
-    WHERE p.id = ?
-  `).get(Number(r.lastInsertRowid));
-  res.status(201).json(created);
-});
+  const id = await insert(
+    "INSERT INTO pedidos (cliente_id, cardapio_id, quantidade, preco_unitario, total, data, observacao) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [Number(cliente_id), Number(cardapio_id), qtd, precoUnit, total, dataFinal, String(observacao).trim()]
+  );
+  res.status(201).json(mapPedido(await get(`${PEDIDO_JOIN} WHERE p.id = ?`, [id])));
+}));
 
-app.put("/api/pedidos/:id", auth, (req, res) => {
+app.put("/api/pedidos/:id", auth, ah(async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ error: "ID inválido" });
   const { cliente_id, cardapio_id, quantidade, data, observacao = "" } = req.body || {};
   const qtd = Number(quantidade);
@@ -244,27 +201,28 @@ app.put("/api/pedidos/:id", auth, (req, res) => {
     return res.status(400).json({ error: "Cliente e cardápio são obrigatórios" });
   if (!Number.isInteger(qtd) || qtd <= 0)
     return res.status(400).json({ error: "Quantidade deve ser maior que zero" });
-  const item = db.prepare("SELECT * FROM cardapios WHERE id = ?").get(Number(cardapio_id));
+  const item = await get("SELECT * FROM cardapios WHERE id = ?", [Number(cardapio_id)]);
   if (!item) return res.status(400).json({ error: "Cardápio não encontrado" });
   const precoUnit = Number(item.preco);
-  const total = precoUnit * qtd;
-  db.prepare("UPDATE pedidos SET cliente_id=?, cardapio_id=?, quantidade=?, preco_unitario=?, total=?, data=?, observacao=? WHERE id=?")
-    .run(Number(cliente_id), Number(cardapio_id), qtd, precoUnit, total, String(data || ""), String(observacao).trim(), Number(req.params.id));
-  const updated = db.prepare(`
-    SELECT p.*, c.nome AS cliente_nome, m.nome AS cardapio_nome
-    FROM pedidos p JOIN clientes c ON c.id=p.cliente_id JOIN cardapios m ON m.id=p.cardapio_id
-    WHERE p.id = ?
-  `).get(Number(req.params.id));
-  res.json(updated);
-});
+  const total = Math.round(precoUnit * qtd * 100) / 100;
+  await run("UPDATE pedidos SET cliente_id=?, cardapio_id=?, quantidade=?, preco_unitario=?, total=?, data=?, observacao=? WHERE id=?",
+    [Number(cliente_id), Number(cardapio_id), qtd, precoUnit, total, String(data || ""), String(observacao).trim(), Number(req.params.id)]);
+  res.json(mapPedido(await get(`${PEDIDO_JOIN} WHERE p.id = ?`, [Number(req.params.id)])));
+}));
 
-app.delete("/api/pedidos/:id", auth, (req, res) => {
+app.delete("/api/pedidos/:id", auth, ah(async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ error: "ID inválido" });
-  db.prepare("DELETE FROM pedidos WHERE id = ?").run(Number(req.params.id));
+  await run("DELETE FROM pedidos WHERE id = ?", [Number(req.params.id)]);
   res.json({ ok: true });
-});
+}));
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
+// eslint-disable-next-line no-unused-vars
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  res.status(500).json({ error: "Erro interno" });
+});
 
 app.listen(PORT, () => {
   console.log(`API rodando em http://localhost:${PORT}`);
