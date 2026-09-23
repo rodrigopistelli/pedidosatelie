@@ -1,4 +1,4 @@
-# Sistema de Pedidos — Marmitas Congeladas (React + SQLite/Postgres)
+# PedidosAtelie — Marmitas Congeladas (React + SQLite/Postgres)
 
 App para a rotina semanal de marmitas congeladas:
 1. **Semanas** — monta o cardápio da semana e divulga via WhatsApp (mensagem pronta p/ transmissão ou envio direto)

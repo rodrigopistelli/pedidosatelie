@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: projeto01-api
+    name: pedidosatelie-api
     runtime: node
     rootDir: server
     buildCommand: npm ci
@@ -12,4 +12,4 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        sync: false # ex: https://projeto01.vercel.app (atualize após criar o frontend)
+        sync: false # ex: https://pedidosatelie.vercel.app (atualize após criar o frontend)

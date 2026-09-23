@@ -13,7 +13,7 @@ export default function Layout() {
   return (
     <>
       <div className="nav">
-        <b>Marmitas & Pedidos</b>
+        <b>PedidosAtelie</b>
         <NavLink to="/">Dashboard</NavLink>
         <NavLink to="/semanas">Semanas</NavLink>
         <NavLink to="/pedidos">Pedidos</NavLink>

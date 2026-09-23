@@ -6,7 +6,7 @@ import { initDb, all, get, run, insert } from "./db.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || "projeto01-secret-dev";
+const JWT_SECRET = process.env.JWT_SECRET || "pedidosatelie-secret-dev";
 
 // Em produção, defina FRONTEND_URL com a URL do Vercel (pode ser lista separada por vírgula).
 // Sem ela (dev local), libera qualquer origem.
