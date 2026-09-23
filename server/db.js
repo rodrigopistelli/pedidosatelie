@@ -87,6 +87,15 @@ const SCHEMA_SQLITE = `
     comprado INTEGER NOT NULL DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
   );
+  CREATE TABLE IF NOT EXISTS webauthn_credentials (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    public_key TEXT NOT NULL,
+    counter INTEGER NOT NULL DEFAULT 0,
+    transports TEXT NOT NULL DEFAULT '[]',
+    nome TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `;
 
 const SCHEMA_PG = `
@@ -161,6 +170,15 @@ const SCHEMA_PG = `
     unidade TEXT NOT NULL DEFAULT 'un',
     observacao TEXT DEFAULT '',
     comprado INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+  CREATE TABLE IF NOT EXISTS webauthn_credentials (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    public_key TEXT NOT NULL,
+    counter INTEGER NOT NULL DEFAULT 0,
+    transports TEXT NOT NULL DEFAULT '[]',
+    nome TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT NOW()
   );
 `;

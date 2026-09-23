@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../AuthContext";
+import SenhaInput from "../components/SenhaInput";
 
 export default function Register() {
   const { register } = useAuth();
@@ -29,7 +30,7 @@ export default function Register() {
           <label>Usuário</label>
           <input value={username} onChange={(e) => setUsername(e.target.value)} required />
           <label>Senha</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <SenhaInput value={password} onChange={(e) => setPassword(e.target.value)} />
           <button className="btn" style={{ width: "100%" }} type="submit">Cadastrar</button>
         </form>
         <p style={{ fontSize: 13 }}><Link to="/login">Voltar ao login</Link></p>

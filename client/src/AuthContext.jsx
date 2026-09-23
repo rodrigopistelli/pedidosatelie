@@ -49,8 +49,15 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  // Login sem senha (biometria/PIN do dispositivo já verificados no backend)
+  function loginComToken(token, username) {
+    localStorage.setItem("token", token);
+    localStorage.setItem("username", username);
+    setUser(username);
+  }
+
   return (
-    <AuthCtx.Provider value={{ user, login, register, logout, loading }}>
+    <AuthCtx.Provider value={{ user, login, register, logout, loading, loginComToken }}>
       {children}
     </AuthCtx.Provider>
   );

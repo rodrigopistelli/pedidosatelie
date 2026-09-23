@@ -9,6 +9,7 @@ import Cardapios from "./pages/Cardapios";
 import Pedidos from "./pages/Pedidos";
 import Semanas from "./pages/Semanas";
 import Mensagens from "./pages/Mensagens";
+import Dispositivos from "./pages/Dispositivos";
 import ComprasSemana from "./pages/ComprasSemana";
 import ListaCorriqueira from "./pages/ListaCorriqueira";
 import Ingredientes from "./pages/Ingredientes";
@@ -31,6 +32,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="semanas" element={<Semanas />} />
             <Route path="mensagens" element={<Mensagens />} />
+            <Route path="dispositivos" element={<Dispositivos />} />
             <Route path="pedidos" element={<Pedidos />} />
             <Route path="compras-semana" element={<ComprasSemana />} />
             <Route path="lista-corriqueira" element={<ListaCorriqueira />} />

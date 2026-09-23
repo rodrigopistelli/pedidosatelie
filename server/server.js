@@ -3,6 +3,7 @@ import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { initDb, all, get, run, insert } from "./db.js";
+import { webauthnRoutes } from "./webauthn.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -87,6 +88,8 @@ app.post("/api/login", ah(async (req, res) => {
 app.get("/api/me", auth, (req, res) => {
   res.json({ user: req.user });
 });
+
+webauthnRoutes({ app, auth, ah, all, get, run, insert, jwt, JWT_SECRET });
 
 // ---- Clientes ----
 app.get("/api/clientes", auth, ah(async (req, res) => {

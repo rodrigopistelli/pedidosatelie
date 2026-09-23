@@ -27,7 +27,8 @@ const GRUPOS = [
     titulo: "Geral",
     itens: [
       { to: "/lista-corriqueira", label: "Lista Corriqueira" },
-      { to: "/clientes", label: "Clientes" }
+      { to: "/clientes", label: "Clientes" },
+      { to: "/dispositivos", label: "Dispositivos" }
     ]
   }
 ];
