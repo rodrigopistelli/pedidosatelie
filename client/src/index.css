@@ -42,17 +42,87 @@ th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
 th { background: #f8fafc; }
 .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
 .toolbar input { max-width: 300px; margin: 0; }
-.nav {
+.shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
   background: #111827;
   color: #fff;
-  padding: 12px 24px;
   display: flex;
-  gap: 16px;
-  align-items: center;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
 }
-.nav a { text-decoration: none; padding: 8px 12px; border-radius: 8px; }
-.nav a.active, .nav a:hover { background: #374151; }
-.nav .spacer { flex: 1; }
+.brand { padding: 18px 20px; font-size: 18px; border-bottom: 1px solid #374151; }
+.menu { flex: 1; overflow-y: auto; padding: 8px 0 16px; }
+.grupo { margin-top: 10px; }
+.grupo-titulo {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #9ca3af;
+  padding: 8px 20px 4px;
+}
+.menu-link {
+  display: block;
+  text-decoration: none;
+  padding: 9px 20px;
+  font-size: 14px;
+  color: #e5e7eb;
+}
+.menu-link:hover { background: #1f2937; }
+.menu-link.active { background: #2563eb; color: #fff; }
+.sidebar-rodape {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #374151;
+  font-size: 13px;
+}
+.sidebar-rodape .usuario { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.conteudo { flex: 1; min-width: 0; }
+.topbar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  background: #111827;
+  color: #fff;
+  padding: 10px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.hamburger {
+  background: #374151;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  font-size: 18px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 29;
+}
+@media (max-width: 860px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 30;
+    transform: translateX(-105%);
+    transition: transform .2s ease;
+  }
+  .sidebar.aberta { transform: none; }
+  .overlay.visivel { display: block; }
+  .topbar { display: flex; }
+}
 .login-wrap {
   min-height: 100vh;
   display: flex;
