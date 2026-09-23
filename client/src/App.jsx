@@ -7,6 +7,9 @@ import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
 import Cardapios from "./pages/Cardapios";
 import Pedidos from "./pages/Pedidos";
+import Semanas from "./pages/Semanas";
+import Compras from "./pages/Compras";
+import Ingredientes from "./pages/Ingredientes";
 
 function Private({ children }) {
   const { user, loading } = useAuth();
@@ -24,9 +27,12 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/" element={<Private><Layout /></Private>}>
             <Route index element={<Dashboard />} />
-            <Route path="clientes" element={<Clientes />} />
-            <Route path="cardapios" element={<Cardapios />} />
+            <Route path="semanas" element={<Semanas />} />
             <Route path="pedidos" element={<Pedidos />} />
+            <Route path="compras" element={<Compras />} />
+            <Route path="cardapios" element={<Cardapios />} />
+            <Route path="ingredientes" element={<Ingredientes />} />
+            <Route path="clientes" element={<Clientes />} />
           </Route>
         </Routes>
       </BrowserRouter>

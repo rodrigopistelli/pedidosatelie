@@ -1,7 +1,12 @@
-# Sistema de Pedidos — React + SQLite
+# Sistema de Pedidos — Marmitas Congeladas (React + SQLite/Postgres)
 
-App com tela de login, cadastro de clientes (nome, telefone, endereço),
-cadastro de cardápios e tela de pedidos (cliente + cardápio + quantidade).
+App para a rotina semanal de marmitas congeladas:
+1. **Semanas** — monta o cardápio da semana e divulga via WhatsApp (mensagem pronta p/ transmissão ou envio direto)
+2. **Pedidos** — encomendas multi-itens por cliente, com semana, entrega combinada e status (pendente → confirmado → em produção → pronto → entregue)
+3. **Compras** — levantamento automático de ingredientes (ficha técnica × encomendas)
+4. Produção e entrega nas datas combinadas (status + próximas entregas no dashboard)
+
+Cadastros: clientes (nome, telefone, endereço), pratos (nome, descrição, preço + ficha técnica), ingredientes.
 
 ## Stack
 - Frontend: React 18 + Vite + React Router (`client/`)

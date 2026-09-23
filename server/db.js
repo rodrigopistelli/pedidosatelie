@@ -34,16 +34,49 @@ const SCHEMA_SQLITE = `
     preco REAL NOT NULL DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
   );
+  CREATE TABLE IF NOT EXISTS semanas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    titulo TEXT NOT NULL,
+    data_inicio TEXT,
+    data_fim TEXT,
+    status TEXT NOT NULL DEFAULT 'rascunho',
+    observacao TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS semana_itens (
+    semana_id INTEGER NOT NULL REFERENCES semanas(id) ON DELETE CASCADE,
+    cardapio_id INTEGER NOT NULL REFERENCES cardapios(id) ON DELETE RESTRICT,
+    PRIMARY KEY (semana_id, cardapio_id)
+  );
+  CREATE TABLE IF NOT EXISTS ingredientes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    unidade TEXT NOT NULL DEFAULT 'un',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS prato_ingredientes (
+    cardapio_id INTEGER NOT NULL REFERENCES cardapios(id) ON DELETE CASCADE,
+    ingrediente_id INTEGER NOT NULL REFERENCES ingredientes(id) ON DELETE RESTRICT,
+    quantidade REAL NOT NULL DEFAULT 0,
+    PRIMARY KEY (cardapio_id, ingrediente_id)
+  );
   CREATE TABLE IF NOT EXISTS pedidos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     cliente_id INTEGER NOT NULL REFERENCES clientes(id) ON DELETE RESTRICT,
-    cardapio_id INTEGER NOT NULL REFERENCES cardapios(id) ON DELETE RESTRICT,
-    quantidade INTEGER NOT NULL DEFAULT 1,
-    preco_unitario REAL NOT NULL DEFAULT 0,
+    semana_id INTEGER REFERENCES semanas(id) ON DELETE SET NULL,
     total REAL NOT NULL DEFAULT 0,
     data TEXT NOT NULL DEFAULT (date('now')),
+    data_entrega TEXT,
+    status TEXT NOT NULL DEFAULT 'pendente',
     observacao TEXT DEFAULT '',
     created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS pedido_itens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pedido_id INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+    cardapio_id INTEGER NOT NULL REFERENCES cardapios(id) ON DELETE RESTRICT,
+    quantidade INTEGER NOT NULL DEFAULT 1,
+    preco_unitario REAL NOT NULL DEFAULT 0
   );
 `;
 
@@ -68,16 +101,49 @@ const SCHEMA_PG = `
     preco REAL NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW()
   );
+  CREATE TABLE IF NOT EXISTS semanas (
+    id SERIAL PRIMARY KEY,
+    titulo TEXT NOT NULL,
+    data_inicio DATE,
+    data_fim DATE,
+    status TEXT NOT NULL DEFAULT 'rascunho',
+    observacao TEXT DEFAULT '',
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+  CREATE TABLE IF NOT EXISTS semana_itens (
+    semana_id INTEGER NOT NULL REFERENCES semanas(id) ON DELETE CASCADE,
+    cardapio_id INTEGER NOT NULL REFERENCES cardapios(id) ON DELETE RESTRICT,
+    PRIMARY KEY (semana_id, cardapio_id)
+  );
+  CREATE TABLE IF NOT EXISTS ingredientes (
+    id SERIAL PRIMARY KEY,
+    nome TEXT NOT NULL,
+    unidade TEXT NOT NULL DEFAULT 'un',
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+  CREATE TABLE IF NOT EXISTS prato_ingredientes (
+    cardapio_id INTEGER NOT NULL REFERENCES cardapios(id) ON DELETE CASCADE,
+    ingrediente_id INTEGER NOT NULL REFERENCES ingredientes(id) ON DELETE RESTRICT,
+    quantidade REAL NOT NULL DEFAULT 0,
+    PRIMARY KEY (cardapio_id, ingrediente_id)
+  );
   CREATE TABLE IF NOT EXISTS pedidos (
     id SERIAL PRIMARY KEY,
     cliente_id INTEGER NOT NULL REFERENCES clientes(id) ON DELETE RESTRICT,
-    cardapio_id INTEGER NOT NULL REFERENCES cardapios(id) ON DELETE RESTRICT,
-    quantidade INTEGER NOT NULL DEFAULT 1,
-    preco_unitario REAL NOT NULL DEFAULT 0,
+    semana_id INTEGER REFERENCES semanas(id) ON DELETE SET NULL,
     total REAL NOT NULL DEFAULT 0,
     data DATE NOT NULL DEFAULT CURRENT_DATE,
+    data_entrega DATE,
+    status TEXT NOT NULL DEFAULT 'pendente',
     observacao TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT NOW()
+  );
+  CREATE TABLE IF NOT EXISTS pedido_itens (
+    id SERIAL PRIMARY KEY,
+    pedido_id INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+    cardapio_id INTEGER NOT NULL REFERENCES cardapios(id) ON DELETE RESTRICT,
+    quantidade INTEGER NOT NULL DEFAULT 1,
+    preco_unitario REAL NOT NULL DEFAULT 0
   );
 `;
 
@@ -95,6 +161,50 @@ export async function initDb() {
     lite.exec("PRAGMA journal_mode = WAL;");
     lite.exec(SCHEMA_SQLITE);
     console.log("Banco: SQLite local (database.db)");
+  }
+  await migrate();
+}
+
+// Migra bancos criados na versão 1 (pedido = 1 prato + qtd direto na tabela)
+// para a versão 2 (pedido com múltiplos itens + semana + entrega + status).
+async function migrate() {
+  if (usePg) {
+    const cols = (
+      await pool.query(`SELECT column_name FROM information_schema.columns WHERE table_name = 'pedidos'`)
+    ).rows.map((r) => r.column_name);
+    if (!cols.includes("semana_id"))
+      await pool.query(`ALTER TABLE pedidos ADD COLUMN semana_id INTEGER REFERENCES semanas(id) ON DELETE SET NULL`);
+    if (!cols.includes("data_entrega"))
+      await pool.query(`ALTER TABLE pedidos ADD COLUMN data_entrega DATE`);
+    if (!cols.includes("status"))
+      await pool.query(`ALTER TABLE pedidos ADD COLUMN status TEXT NOT NULL DEFAULT 'pendente'`);
+    if (cols.includes("cardapio_id")) {
+      await pool.query(
+        `INSERT INTO pedido_itens (pedido_id, cardapio_id, quantidade, preco_unitario)
+         SELECT id, cardapio_id, quantidade, preco_unitario FROM pedidos`
+      );
+      await pool.query(`ALTER TABLE pedidos DROP COLUMN cardapio_id`);
+      await pool.query(`ALTER TABLE pedidos DROP COLUMN quantidade`);
+      await pool.query(`ALTER TABLE pedidos DROP COLUMN preco_unitario`);
+      console.log("Migração: pedidos v1 -> v2 (Postgres) concluída");
+    }
+  } else {
+    const cols = lite.prepare(`PRAGMA table_info(pedidos)`).all().map((c) => c.name);
+    if (!cols.includes("semana_id"))
+      lite.exec(`ALTER TABLE pedidos ADD COLUMN semana_id INTEGER REFERENCES semanas(id) ON DELETE SET NULL`);
+    if (!cols.includes("data_entrega")) lite.exec(`ALTER TABLE pedidos ADD COLUMN data_entrega TEXT`);
+    if (!cols.includes("status"))
+      lite.exec(`ALTER TABLE pedidos ADD COLUMN status TEXT NOT NULL DEFAULT 'pendente'`);
+    if (cols.includes("cardapio_id")) {
+      lite.exec(
+        `INSERT INTO pedido_itens (pedido_id, cardapio_id, quantidade, preco_unitario)
+         SELECT id, cardapio_id, quantidade, preco_unitario FROM pedidos`
+      );
+      lite.exec(`ALTER TABLE pedidos DROP COLUMN cardapio_id`);
+      lite.exec(`ALTER TABLE pedidos DROP COLUMN quantidade`);
+      lite.exec(`ALTER TABLE pedidos DROP COLUMN preco_unitario`);
+      console.log("Migração: pedidos v1 -> v2 (SQLite) concluída");
+    }
   }
 }
 

@@ -13,11 +13,14 @@ export default function Layout() {
   return (
     <>
       <div className="nav">
-        <b>Sistema de Pedidos</b>
+        <b>Marmitas & Pedidos</b>
         <NavLink to="/">Dashboard</NavLink>
-        <NavLink to="/clientes">Clientes</NavLink>
-        <NavLink to="/cardapios">Cardápios</NavLink>
+        <NavLink to="/semanas">Semanas</NavLink>
         <NavLink to="/pedidos">Pedidos</NavLink>
+        <NavLink to="/compras">Compras</NavLink>
+        <NavLink to="/cardapios">Pratos</NavLink>
+        <NavLink to="/ingredientes">Ingredientes</NavLink>
+        <NavLink to="/clientes">Clientes</NavLink>
         <span className="spacer" />
         <span style={{ fontSize: 13 }}>{user}</span>
         <button className="btn small secondary" onClick={sair}>Sair</button>
