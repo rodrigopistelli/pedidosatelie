@@ -8,6 +8,7 @@ import Clientes from "./pages/Clientes";
 import Cardapios from "./pages/Cardapios";
 import Pedidos from "./pages/Pedidos";
 import Semanas from "./pages/Semanas";
+import Mensagens from "./pages/Mensagens";
 import ComprasSemana from "./pages/ComprasSemana";
 import ListaCorriqueira from "./pages/ListaCorriqueira";
 import Ingredientes from "./pages/Ingredientes";
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/" element={<Private><Layout /></Private>}>
             <Route index element={<Dashboard />} />
             <Route path="semanas" element={<Semanas />} />
+            <Route path="mensagens" element={<Mensagens />} />
             <Route path="pedidos" element={<Pedidos />} />
             <Route path="compras-semana" element={<ComprasSemana />} />
             <Route path="lista-corriqueira" element={<ListaCorriqueira />} />

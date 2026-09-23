@@ -16,6 +16,7 @@ export default function Layout() {
         <b>PedidosAtelie</b>
         <NavLink to="/">Dashboard</NavLink>
         <NavLink to="/semanas">Semanas</NavLink>
+        <NavLink to="/mensagens">Mensagens</NavLink>
         <NavLink to="/pedidos">Pedidos</NavLink>
         <NavLink to="/compras-semana">Compras da Semana</NavLink>
         <NavLink to="/lista-corriqueira">Lista Corriqueira</NavLink>
