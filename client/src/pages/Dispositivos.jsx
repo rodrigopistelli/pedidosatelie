@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/browser";
+import { Trash2 } from "lucide-react";
 import { api } from "../api";
+import IconBtn from "../components/IconBtn";
 
 export default function Dispositivos() {
   const [lista, setLista] = useState([]);
@@ -75,7 +77,7 @@ export default function Dispositivos() {
               <tr key={d.id}>
                 <td>{d.nome || "(sem nome)"}</td>
                 <td>{d.created_at}</td>
-                <td><button className="btn small danger" onClick={() => remover(d.id)}>Remover</button></td>
+                <td><IconBtn titulo="Remover aparelho" variante="perigo" onClick={() => remover(d.id)}><Trash2 size={16} /></IconBtn></td>
               </tr>
             ))}
           </tbody>

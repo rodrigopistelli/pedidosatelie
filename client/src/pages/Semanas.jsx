@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { FolderOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { api, formatBRL } from "../api";
 import { msgSemana, waLink, copyText } from "../whatsapp";
+import IconBtn from "../components/IconBtn";
 
 const empty = { titulo: "", data_inicio: "", data_fim: "", observacao: "" };
 const STATUS = { rascunho: "Rascunho", aberto: "Aberta", fechado: "Fechada" };
@@ -133,13 +135,13 @@ export default function Semanas() {
                 <td>{s.titulo}</td>
                 <td>{s.data_inicio || "-"} a {s.data_fim || "-"}</td>
                 <td>{STATUS[s.status] || s.status}</td>
-                <td><button className="btn small" onClick={() => abrir(s.id)}>Abrir</button></td>
+                <td><IconBtn titulo="Abrir semana" onClick={() => abrir(s.id)}><FolderOpen size={16} /></IconBtn></td>
                 <td><div className="row-actions">
-                  <button className="btn small secondary" onClick={() => {
+                  <IconBtn titulo="Editar semana" variante="secundaria" onClick={() => {
                     setEditId(s.id);
                     setForm({ titulo: s.titulo, data_inicio: s.data_inicio || "", data_fim: s.data_fim || "", observacao: s.observacao || "" });
-                  }}>Editar</button>
-                  <button className="btn small danger" onClick={() => excluir(s.id)}>Excluir</button>
+                  }}><Pencil size={16} /></IconBtn>
+                  <IconBtn titulo="Excluir semana" variante="perigo" onClick={() => excluir(s.id)}><Trash2 size={16} /></IconBtn>
                 </div></td>
               </tr>
             ))}
@@ -163,7 +165,7 @@ export default function Semanas() {
               <option value="">Adicionar prato...</option>
               {cardapios.map((m) => <option key={m.id} value={m.id}>{m.nome} — {formatBRL(m.preco)}</option>)}
             </select>
-            <button className="btn small" onClick={adicionarPrato}>Adicionar</button>
+            <IconBtn titulo="Adicionar prato" onClick={adicionarPrato}><Plus size={16} /></IconBtn>
           </div>
           <table>
             <thead><tr><th>Prato</th><th>Preço</th><th></th></tr></thead>
@@ -171,7 +173,7 @@ export default function Semanas() {
               {(detalhe.itens || []).map((m) => (
                 <tr key={m.id}>
                   <td>{m.nome}</td><td>{formatBRL(m.preco)}</td>
-                  <td><button className="btn small danger" onClick={() => removerPrato(m.id)}>Remover</button></td>
+                  <td><IconBtn titulo="Remover prato" variante="perigo" onClick={() => removerPrato(m.id)}><Trash2 size={16} /></IconBtn></td>
                 </tr>
               ))}
             </tbody>

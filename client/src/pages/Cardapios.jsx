@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Pencil, Plus, Trash2, ClipboardList } from "lucide-react";
 import { api, formatBRL } from "../api";
+import IconBtn from "../components/IconBtn";
 
 const empty = { nome: "", descricao: "", preco: "" };
 
@@ -107,9 +109,9 @@ export default function Cardapios() {
                 <td>{m.id}</td><td>{m.nome}</td><td>{m.descricao}</td>
                 <td>{formatBRL(m.preco)}</td>
                 <td><div className="row-actions">
-                  <button className="btn small" onClick={() => abrirFicha(m.id)}>Ficha técnica</button>
-                  <button className="btn small secondary" onClick={() => editar(m)}>Editar</button>
-                  <button className="btn small danger" onClick={() => excluir(m.id)}>Excluir</button>
+                  <IconBtn titulo="Ficha técnica" onClick={() => abrirFicha(m.id)}><ClipboardList size={16} /></IconBtn>
+                  <IconBtn titulo="Editar prato" variante="secundaria" onClick={() => editar(m)}><Pencil size={16} /></IconBtn>
+                  <IconBtn titulo="Excluir prato" variante="perigo" onClick={() => excluir(m.id)}><Trash2 size={16} /></IconBtn>
                 </div></td>
               </tr>
             ))}
@@ -126,7 +128,7 @@ export default function Cardapios() {
                   <tr key={f.ingrediente_id}>
                     <td>{f.ingrediente_nome}</td>
                     <td>{f.quantidade} {f.unidade}</td>
-                    <td><button className="btn small danger" onClick={() => removerIngrediente(f.ingrediente_id)}>Remover</button></td>
+                    <td><IconBtn titulo="Remover ingrediente" variante="perigo" onClick={() => removerIngrediente(f.ingrediente_id)}><Trash2 size={16} /></IconBtn></td>
                   </tr>
                 ))}
               </tbody>
@@ -139,7 +141,7 @@ export default function Cardapios() {
               </select>
               <input type="number" step="0.001" min="0" placeholder="Qtd por unidade" style={{ maxWidth: 160, margin: 0 }}
                 value={novoIng.quantidade} onChange={(e) => setNovoIng({ ...novoIng, quantidade: e.target.value })} />
-              <button className="btn small" onClick={addIngrediente}>Adicionar</button>
+              <IconBtn titulo="Adicionar ingrediente" onClick={addIngrediente}><Plus size={16} /></IconBtn>
             </div>
           </div>
         )}

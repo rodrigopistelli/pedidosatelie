@@ -136,6 +136,23 @@ th { background: #f8fafc; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
 .row-actions { display: flex; gap: 8px; }
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+}
+.icon-btn:hover { filter: brightness(.88); }
+.icon-btn.secundaria { background: #6b7280; }
+.icon-btn.perigo { background: #dc2626; }
+.icon-btn.sucesso { background: #16a34a; }
+.icon-btn:disabled { opacity: .5; cursor: default; }
 .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
 .kpis .card { text-align: center; margin: 0; }
 .kpis strong { font-size: 26px; display: block; }

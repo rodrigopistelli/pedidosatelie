@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import { api } from "../api";
+import IconBtn from "../components/IconBtn";
 
 const UNIDADES = ["un", "kg", "g", "L", "mL", "pacote", "caixa", "lata", "dúzia"];
 
@@ -69,8 +71,8 @@ export default function Ingredientes() {
               <tr key={i.id}>
                 <td>{i.id}</td><td>{i.nome}</td><td>{i.unidade}</td>
                 <td><div className="row-actions">
-                  <button className="btn small secondary" onClick={() => { setEditId(i.id); setForm({ nome: i.nome, unidade: i.unidade }); }}>Editar</button>
-                  <button className="btn small danger" onClick={() => excluir(i.id)}>Excluir</button>
+                  <IconBtn titulo="Editar ingrediente" variante="secundaria" onClick={() => { setEditId(i.id); setForm({ nome: i.nome, unidade: i.unidade }); }}><Pencil size={16} /></IconBtn>
+                  <IconBtn titulo="Excluir ingrediente" variante="perigo" onClick={() => excluir(i.id)}><Trash2 size={16} /></IconBtn>
                 </div></td>
               </tr>
             ))}

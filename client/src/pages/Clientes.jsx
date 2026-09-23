@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import { api } from "../api";
+import IconBtn from "../components/IconBtn";
 
 const empty = { nome: "", telefone: "", endereco: "" };
 
@@ -80,8 +82,8 @@ export default function Clientes() {
               <tr key={c.id}>
                 <td>{c.id}</td><td>{c.nome}</td><td>{c.telefone}</td><td>{c.endereco}</td>
                 <td><div className="row-actions">
-                  <button className="btn small secondary" onClick={() => editar(c)}>Editar</button>
-                  <button className="btn small danger" onClick={() => excluir(c.id)}>Excluir</button>
+                  <IconBtn titulo="Editar cliente" variante="secundaria" onClick={() => editar(c)}><Pencil size={16} /></IconBtn>
+                  <IconBtn titulo="Excluir cliente" variante="perigo" onClick={() => excluir(c.id)}><Trash2 size={16} /></IconBtn>
                 </div></td>
               </tr>
             ))}

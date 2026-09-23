@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { ArrowRight, Ban, MessageCircle, Pencil, Plus, Trash2, X } from "lucide-react";
 import { api, formatBRL } from "../api";
 import { msgPedido, waLink } from "../whatsapp";
+import IconBtn from "../components/IconBtn";
 
 const HOJE = new Date().toISOString().slice(0, 10);
 const empty = { cliente_id: "", semana_id: "", data: HOJE, data_entrega: "", observacao: "", itens: [{ cardapio_id: "", quantidade: 1 }] };
@@ -133,12 +135,12 @@ export default function Pedidos() {
                 <div style={{ flex: 1 }}><label>Qtd</label>
                   <input type="number" min="1" step="1" value={it.quantidade}
                     onChange={(e) => setItem(i, "quantidade", e.target.value)} required /></div>
-                <button type="button" className="btn small danger" onClick={() => delItem(i)}>X</button>
+                <IconBtn titulo="Remover item" variante="perigo" onClick={() => delItem(i)}><X size={16} /></IconBtn>
               </div>
             </div>
           ))}
           <div className="toolbar">
-            <button type="button" className="btn small secondary" onClick={addItem}>+ Adicionar item</button>
+            <button type="button" className="btn small secondary" onClick={addItem} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Plus size={15} /> Adicionar item</button>
             <span>Total previsto: <b>{formatBRL(totalPrev)}</b></span>
           </div>
           <div className="grid2">
@@ -178,11 +180,11 @@ export default function Pedidos() {
                 <td>{p.data_entrega || "-"}</td>
                 <td>{STATUS[p.status] || p.status}</td>
                 <td><div className="row-actions">
-                    {PROXIMO[p.status] && <button className="btn small" onClick={() => avancar(p)}>→ {STATUS[PROXIMO[p.status]]}</button>}
-                    <button className="btn small secondary" onClick={() => confirmarWhats(p)}>WhatsApp</button>
-                    <button className="btn small secondary" onClick={() => editar(p)}>Editar</button>
-                    {p.status !== "cancelado" && <button className="btn small danger" onClick={() => cancelar(p)}>Cancelar</button>}
-                    <button className="btn small danger" onClick={() => excluir(p.id)}>Excluir</button>
+                    {PROXIMO[p.status] && <IconBtn titulo={`Avançar para ${STATUS[PROXIMO[p.status]]}`} variante="sucesso" onClick={() => avancar(p)}><ArrowRight size={16} /></IconBtn>}
+                    <IconBtn titulo="Confirmar pelo WhatsApp" variante="sucesso" onClick={() => confirmarWhats(p)}><MessageCircle size={16} /></IconBtn>
+                    <IconBtn titulo="Editar pedido" variante="secundaria" onClick={() => editar(p)}><Pencil size={16} /></IconBtn>
+                    {p.status !== "cancelado" && <IconBtn titulo="Cancelar pedido" variante="perigo" onClick={() => cancelar(p)}><Ban size={16} /></IconBtn>}
+                    <IconBtn titulo="Excluir pedido" variante="perigo" onClick={() => excluir(p.id)}><Trash2 size={16} /></IconBtn>
                   </div></td>
               </tr>
             ))}

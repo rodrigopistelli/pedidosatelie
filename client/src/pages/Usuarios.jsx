@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import { api } from "../api";
 import SenhaInput from "../components/SenhaInput";
+import IconBtn from "../components/IconBtn";
 
 const empty = { username: "", password: "", role: "user" };
 
@@ -90,8 +92,8 @@ export default function Usuarios() {
                 <td>{u.role === "admin" ? "Administrador" : "Usuário"}</td>
                 <td>{u.created_at}</td>
                 <td><div className="row-actions">
-                  <button className="btn small secondary" onClick={() => editar(u)}>Editar</button>
-                  <button className="btn small danger" onClick={() => excluir(u.id)}>Excluir</button>
+                  <IconBtn titulo="Editar usuário" variante="secundaria" onClick={() => editar(u)}><Pencil size={16} /></IconBtn>
+                  <IconBtn titulo="Excluir usuário" variante="perigo" onClick={() => excluir(u.id)}><Trash2 size={16} /></IconBtn>
                 </div></td>
               </tr>
             ))}

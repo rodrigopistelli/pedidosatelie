@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import { api } from "../api";
+import IconBtn from "../components/IconBtn";
 
 const UNIDADES = ["un", "kg", "g", "L", "mL", "pacote", "caixa", "lata", "dúzia"];
 
@@ -101,11 +103,11 @@ export default function ListaCorriqueira() {
                 <td>{i.quantidade} {i.unidade}</td>
                 <td>{i.observacao}</td>
                 <td><div className="row-actions">
-                  <button className="btn small secondary" onClick={() => {
+                  <IconBtn titulo="Editar item" variante="secundaria" onClick={() => {
                     setEditId(i.id);
                     setForm({ nome: i.nome, quantidade: i.quantidade, unidade: i.unidade, observacao: i.observacao || "" });
-                  }}>Editar</button>
-                  <button className="btn small danger" onClick={() => excluir(i.id)}>Excluir</button>
+                  }}><Pencil size={16} /></IconBtn>
+                  <IconBtn titulo="Excluir item" variante="perigo" onClick={() => excluir(i.id)}><Trash2 size={16} /></IconBtn>
                 </div></td>
               </tr>
             ))}
