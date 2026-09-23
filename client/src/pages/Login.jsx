@@ -76,8 +76,6 @@ export default function Login() {
           </>
         )}
         <p style={{ fontSize: 13 }}>
-          Padrão inicial: <b>admin / admin123</b><br />
-          Após entrar, cadastre este aparelho em <b>Geral → Dispositivos</b>.<br />
           <Link to="/register">Criar nova conta</Link>
         </p>
       </div>
