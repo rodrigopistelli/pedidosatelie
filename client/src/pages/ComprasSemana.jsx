@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 
-export default function Compras() {
+export default function ComprasSemana() {
   const [semanas, setSemanas] = useState([]);
   const [semanaId, setSemanaId] = useState("");
   const [dados, setDados] = useState(null);
@@ -25,10 +25,10 @@ export default function Compras() {
 
   return (
     <div className="container">
-      <h1>Levantamento de Compras</h1>
+      <h1>Compras da Semana (encomendas)</h1>
       <p style={{ color: "#555", fontSize: 14 }}>
-        Soma automática dos ingredientes (ficha técnica × quantidades encomendadas),
-        considerando pedidos <b>não cancelados</b> da semana.
+        Levantamento automático dos ingredientes (ficha técnica × quantidades encomendadas),
+        considerando pedidos <b>não cancelados</b> da semana. Para o dia a dia, use a <b>Lista Corriqueira</b>.
       </p>
       {error && <div className="error">{error}</div>}
       <div className="card">
@@ -40,7 +40,7 @@ export default function Compras() {
         </div>
         {dados && (
           <>
-            <h2>Lista de compras</h2>
+            <h2>Lista de compras das encomendas</h2>
             <table>
               <thead><tr><th>Ingrediente</th><th>Total a comprar</th><th>Detalhe por prato</th></tr></thead>
               <tbody>

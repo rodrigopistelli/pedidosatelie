@@ -78,6 +78,15 @@ const SCHEMA_SQLITE = `
     quantidade INTEGER NOT NULL DEFAULT 1,
     preco_unitario REAL NOT NULL DEFAULT 0
   );
+  CREATE TABLE IF NOT EXISTS lista_corriqueira (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    quantidade REAL NOT NULL DEFAULT 1,
+    unidade TEXT NOT NULL DEFAULT 'un',
+    observacao TEXT DEFAULT '',
+    comprado INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `;
 
 const SCHEMA_PG = `
@@ -144,6 +153,15 @@ const SCHEMA_PG = `
     cardapio_id INTEGER NOT NULL REFERENCES cardapios(id) ON DELETE RESTRICT,
     quantidade INTEGER NOT NULL DEFAULT 1,
     preco_unitario REAL NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS lista_corriqueira (
+    id SERIAL PRIMARY KEY,
+    nome TEXT NOT NULL,
+    quantidade REAL NOT NULL DEFAULT 1,
+    unidade TEXT NOT NULL DEFAULT 'un',
+    observacao TEXT DEFAULT '',
+    comprado INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
   );
 `;
 

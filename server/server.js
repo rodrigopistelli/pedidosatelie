@@ -490,6 +490,52 @@ app.get("/api/compras", auth, ah(async (req, res) => {
   });
 }));
 
+// ---- Lista Corriqueira (dia a dia, manual) ----
+app.get("/api/lista-corriqueira", auth, ah(async (req, res) => {
+  const rows = await all("SELECT * FROM lista_corriqueira ORDER BY comprado, id DESC");
+  res.json(rows);
+}));
+
+app.post("/api/lista-corriqueira", auth, ah(async (req, res) => {
+  const { nome, quantidade = 1, unidade = "un", observacao = "" } = req.body || {};
+  const qtd = Number(quantidade);
+  if (!nome?.trim()) return res.status(400).json({ error: "Nome do item é obrigatório" });
+  if (!Number.isFinite(qtd) || qtd <= 0) return res.status(400).json({ error: "Quantidade inválida" });
+  const id = await insert("INSERT INTO lista_corriqueira (nome, quantidade, unidade, observacao) VALUES (?, ?, ?, ?)",
+    [nome.trim(), qtd, String(unidade || "un").trim() || "un", String(observacao).trim()]);
+  res.status(201).json(await get("SELECT * FROM lista_corriqueira WHERE id = ?", [id]));
+}));
+
+app.put("/api/lista-corriqueira/:id", auth, ah(async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ error: "ID inválido" });
+  const { nome, quantidade = 1, unidade = "un", observacao = "" } = req.body || {};
+  const qtd = Number(quantidade);
+  if (!nome?.trim()) return res.status(400).json({ error: "Nome do item é obrigatório" });
+  if (!Number.isFinite(qtd) || qtd <= 0) return res.status(400).json({ error: "Quantidade inválida" });
+  await run("UPDATE lista_corriqueira SET nome=?, quantidade=?, unidade=?, observacao=? WHERE id=?",
+    [nome.trim(), qtd, String(unidade || "un").trim() || "un", String(observacao).trim(), Number(req.params.id)]);
+  res.json(await get("SELECT * FROM lista_corriqueira WHERE id = ?", [Number(req.params.id)]));
+}));
+
+app.patch("/api/lista-corriqueira/:id", auth, ah(async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ error: "ID inválido" });
+  const { comprado } = req.body || {};
+  await run("UPDATE lista_corriqueira SET comprado=? WHERE id=?", [comprado ? 1 : 0, Number(req.params.id)]);
+  res.json(await get("SELECT * FROM lista_corriqueira WHERE id = ?", [Number(req.params.id)]));
+}));
+
+// Limpa os já comprados (rota específica antes da genérica :id)
+app.delete("/api/lista-corriqueira/comprados", auth, ah(async (req, res) => {
+  await run("DELETE FROM lista_corriqueira WHERE comprado = 1");
+  res.json({ ok: true });
+}));
+
+app.delete("/api/lista-corriqueira/:id", auth, ah(async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ error: "ID inválido" });
+  await run("DELETE FROM lista_corriqueira WHERE id = ?", [Number(req.params.id)]);
+  res.json({ ok: true });
+}));
+
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 // eslint-disable-next-line no-unused-vars

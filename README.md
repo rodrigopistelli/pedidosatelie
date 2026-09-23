@@ -3,8 +3,12 @@
 App para a rotina semanal de marmitas congeladas:
 1. **Semanas** — monta o cardápio da semana e divulga via WhatsApp (mensagem pronta p/ transmissão ou envio direto)
 2. **Pedidos** — encomendas multi-itens por cliente, com semana, entrega combinada e status (pendente → confirmado → em produção → pronto → entregue)
-3. **Compras** — levantamento automático de ingredientes (ficha técnica × encomendas)
+3. **Compras da Semana** — levantamento automático de ingredientes (ficha técnica × encomendas)
 4. Produção e entrega nas datas combinadas (status + próximas entregas no dashboard)
+
+Listas de compra (nomes sem ambiguidade):
+- **Compras da Semana** — gerada das encomendas, automática por semana
+- **Lista Corriqueira** — dia a dia da casa, lançamento manual
 
 Cadastros: clientes (nome, telefone, endereço), pratos (nome, descrição, preço + ficha técnica), ingredientes.
 

@@ -17,7 +17,8 @@ export default function Layout() {
         <NavLink to="/">Dashboard</NavLink>
         <NavLink to="/semanas">Semanas</NavLink>
         <NavLink to="/pedidos">Pedidos</NavLink>
-        <NavLink to="/compras">Compras</NavLink>
+        <NavLink to="/compras-semana">Compras da Semana</NavLink>
+        <NavLink to="/lista-corriqueira">Lista Corriqueira</NavLink>
         <NavLink to="/cardapios">Pratos</NavLink>
         <NavLink to="/ingredientes">Ingredientes</NavLink>
         <NavLink to="/clientes">Clientes</NavLink>

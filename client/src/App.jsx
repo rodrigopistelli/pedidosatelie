@@ -8,7 +8,8 @@ import Clientes from "./pages/Clientes";
 import Cardapios from "./pages/Cardapios";
 import Pedidos from "./pages/Pedidos";
 import Semanas from "./pages/Semanas";
-import Compras from "./pages/Compras";
+import ComprasSemana from "./pages/ComprasSemana";
+import ListaCorriqueira from "./pages/ListaCorriqueira";
 import Ingredientes from "./pages/Ingredientes";
 
 function Private({ children }) {
@@ -29,7 +30,8 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="semanas" element={<Semanas />} />
             <Route path="pedidos" element={<Pedidos />} />
-            <Route path="compras" element={<Compras />} />
+            <Route path="compras-semana" element={<ComprasSemana />} />
+            <Route path="lista-corriqueira" element={<ListaCorriqueira />} />
             <Route path="cardapios" element={<Cardapios />} />
             <Route path="ingredientes" element={<Ingredientes />} />
             <Route path="clientes" element={<Clientes />} />
