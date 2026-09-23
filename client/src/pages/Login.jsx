@@ -58,7 +58,7 @@ export default function Login() {
     <div className="login-wrap">
       <div className="card login-box">
         <h1>Entrar</h1>
-        <p style={{ color: "#666", fontSize: 14 }}>PedidosAtelie — encomendas de marmitas</p>
+        <p style={{ color: "#666", fontSize: 14 }}>Ateliê do Congelado - Gerenciamento</p>
         {error && <div className="error">{error}</div>}
         <form onSubmit={handleSubmit}>
           <label>Usuário</label>
