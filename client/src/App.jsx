@@ -10,6 +10,8 @@ import Pedidos from "./pages/Pedidos";
 import Semanas from "./pages/Semanas";
 import Mensagens from "./pages/Mensagens";
 import Dispositivos from "./pages/Dispositivos";
+import MinhaConta from "./pages/MinhaConta";
+import Usuarios from "./pages/Usuarios";
 import ComprasSemana from "./pages/ComprasSemana";
 import ListaCorriqueira from "./pages/ListaCorriqueira";
 import Ingredientes from "./pages/Ingredientes";
@@ -33,6 +35,8 @@ export default function App() {
             <Route path="semanas" element={<Semanas />} />
             <Route path="mensagens" element={<Mensagens />} />
             <Route path="dispositivos" element={<Dispositivos />} />
+            <Route path="minha-conta" element={<MinhaConta />} />
+            <Route path="usuarios" element={<Usuarios />} />
             <Route path="pedidos" element={<Pedidos />} />
             <Route path="compras-semana" element={<ComprasSemana />} />
             <Route path="lista-corriqueira" element={<ListaCorriqueira />} />

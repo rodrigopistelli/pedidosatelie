@@ -5,7 +5,22 @@ const AuthCtx = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => localStorage.getItem("username") || null);
+  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  async function carregarPerfil() {
+    try {
+      const d = await api("/api/me");
+      setUser(d.user.username);
+      setRole(d.user.role);
+      localStorage.setItem("username", d.user.username);
+    } catch {
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      setUser(null);
+      setRole(null);
+    }
+  }
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -13,14 +28,7 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return;
     }
-    api("/api/me")
-      .then((d) => setUser(d.user.username))
-      .catch(() => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("username");
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
+    carregarPerfil().finally(() => setLoading(false));
   }, []);
 
   async function login(username, password) {
@@ -31,6 +39,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("token", d.token);
     localStorage.setItem("username", d.username);
     setUser(d.username);
+    await carregarPerfil();
   }
 
   async function register(username, password) {
@@ -41,12 +50,14 @@ export function AuthProvider({ children }) {
     localStorage.setItem("token", d.token);
     localStorage.setItem("username", d.username);
     setUser(d.username);
+    await carregarPerfil();
   }
 
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
     setUser(null);
+    setRole(null);
   }
 
   // Login sem senha (biometria/PIN do dispositivo já verificados no backend)
@@ -54,10 +65,17 @@ export function AuthProvider({ children }) {
     localStorage.setItem("token", token);
     localStorage.setItem("username", username);
     setUser(username);
+    carregarPerfil();
+  }
+
+  // Após trocar o próprio nome em Minha Conta
+  function renomear(novoNome) {
+    localStorage.setItem("username", novoNome);
+    setUser(novoNome);
   }
 
   return (
-    <AuthCtx.Provider value={{ user, login, register, logout, loading, loginComToken }}>
+    <AuthCtx.Provider value={{ user, role, login, register, logout, loading, loginComToken, renomear }}>
       {children}
     </AuthCtx.Provider>
   );

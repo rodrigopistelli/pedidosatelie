@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { msgSemana, waLink, copyText } from "../whatsapp";
 
+const EMOJI_GRUPOS = [
+  { titulo: "Saudação", emojis: ["👋", "😊", "🙏", "❤️", "🎉", "✨"] },
+  { titulo: "Comidas", emojis: ["🍱", "🍝", "🍕", "🥗", "🍗", "🥩", "🐟", "🍚", "🫘", "🥕", "🥔", "🧀", "🥚", "🍰", "🍫", "🧁", "☕", "🧃"] },
+  { titulo: "Avisos", emojis: ["✅", "📋", "💰", "💵", "🚚", "📦", "🕐", "📅", "⚠️", "👇", "👉", "❗"] }
+];
+
 export default function Mensagens() {
   const [semanas, setSemanas] = useState([]);
   const [semanaId, setSemanaId] = useState("");
@@ -11,6 +17,7 @@ export default function Mensagens() {
   const [cliEnvio, setCliEnvio] = useState("");
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
+  const [mostrarEmojis, setMostrarEmojis] = useState(false);
   const areaRef = useRef(null);
 
   useEffect(() => {
@@ -103,6 +110,26 @@ export default function Mensagens() {
           </button>
         </div>
         <label>Texto da mensagem</label>
+        <div className="toolbar">
+          <button type="button" className="btn small secondary" onClick={() => setMostrarEmojis((v) => !v)}>
+            {mostrarEmojis ? "Fechar emojis" : "Inserir emoji"}
+          </button>
+        </div>
+        {mostrarEmojis && (
+          <div style={{ background: "#f8fafc", padding: 10, borderRadius: 8, marginBottom: 8 }}>
+            {EMOJI_GRUPOS.map((g) => (
+              <div key={g.titulo} style={{ marginBottom: 6 }}>
+                <small style={{ color: "#666" }}>{g.titulo}: </small>
+                {g.emojis.map((e) => (
+                  <button key={e} type="button" onClick={() => inserirNoCursor(e)}
+                    style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", padding: 2 }}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
         <textarea ref={areaRef} rows={14} value={texto} onChange={(e) => setTexto(e.target.value)}
           placeholder="Digite sua mensagem aqui..." />
         <div className="toolbar">

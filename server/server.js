@@ -85,9 +85,126 @@ app.post("/api/login", ah(async (req, res) => {
   res.json({ token, username: user.username });
 }));
 
-app.get("/api/me", auth, (req, res) => {
-  res.json({ user: req.user });
-});
+app.get("/api/me", auth, ah(async (req, res) => {
+  const user = await get("SELECT id, username, role FROM users WHERE id = ?", [req.user.id]);
+  if (!user) return res.status(401).json({ error: "Usuário não encontrado" });
+  res.json({ user });
+}));
+
+// Apenas administradores (papel lido do banco, não do token)
+async function adminOnly(req, res, next) {
+  try {
+    const user = await get("SELECT role FROM users WHERE id = ?", [req.user.id]);
+    if (!user || user.role !== "admin")
+      return res.status(403).json({ error: "Acesso restrito ao administrador" });
+    next();
+  } catch (e) {
+    next(e);
+  }
+}
+
+const ROLES = ["admin", "user"];
+
+// ---- Minha conta (qualquer logado): trocar próprio nome e senha ----
+app.patch("/api/account", auth, ah(async (req, res) => {
+  const { username, currentPassword, newPassword } = req.body || {};
+  const me = await get("SELECT * FROM users WHERE id = ?", [req.user.id]);
+  if (!me) return res.status(401).json({ error: "Usuário não encontrado" });
+
+  if (username !== undefined) {
+    const novo = String(username).trim();
+    if (!novo) return res.status(400).json({ error: "Nome de usuário inválido" });
+    if (novo !== me.username) {
+      const existe = await get("SELECT id FROM users WHERE username = ?", [novo]);
+      if (existe) return res.status(409).json({ error: "Este nome de usuário já está em uso" });
+      await run("UPDATE users SET username = ? WHERE id = ?", [novo, me.id]);
+      me.username = novo;
+    }
+  }
+
+  if (newPassword !== undefined && String(newPassword).length > 0) {
+    if (!currentPassword || !bcrypt.compareSync(String(currentPassword), me.password_hash))
+      return res.status(401).json({ error: "Senha atual incorreta" });
+    if (String(newPassword).length < 4)
+      return res.status(400).json({ error: "Nova senha deve ter ao menos 4 caracteres" });
+    await run("UPDATE users SET password_hash = ? WHERE id = ?", [bcrypt.hashSync(String(newPassword), 10), me.id]);
+  }
+
+  res.json({ id: me.id, username: me.username, role: me.role });
+}));
+
+// ---- Usuários (admin) ----
+app.get("/api/users", auth, adminOnly, ah(async (req, res) => {
+  res.json(await all("SELECT id, username, role, created_at FROM users ORDER BY id"));
+}));
+
+app.post("/api/users", auth, adminOnly, ah(async (req, res) => {
+  const { username, password, role = "user" } = req.body || {};
+  if (!username?.trim() || !password)
+    return res.status(400).json({ error: "Informe usuário e senha" });
+  if (String(password).length < 4)
+    return res.status(400).json({ error: "Senha deve ter ao menos 4 caracteres" });
+  if (!ROLES.includes(role)) return res.status(400).json({ error: "Perfil inválido" });
+  try {
+    const id = await insert("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+      [String(username).trim(), bcrypt.hashSync(String(password), 10), role]);
+    res.status(201).json(await get("SELECT id, username, role, created_at FROM users WHERE id = ?", [id]));
+  } catch (e) {
+    if (String(e.message).includes("UNIQUE") || String(e.message).includes("duplicate"))
+      return res.status(409).json({ error: "Usuário já existe" });
+    throw e;
+  }
+}));
+
+app.put("/api/users/:id", auth, adminOnly, ah(async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ error: "ID inválido" });
+  const alvo = await get("SELECT * FROM users WHERE id = ?", [Number(req.params.id)]);
+  if (!alvo) return res.status(404).json({ error: "Usuário não encontrado" });
+  const { username, role, password } = req.body || {};
+
+  if (username !== undefined) {
+    const novo = String(username).trim();
+    if (!novo) return res.status(400).json({ error: "Nome de usuário inválido" });
+    if (novo !== alvo.username) {
+      const existe = await get("SELECT id FROM users WHERE username = ?", [novo]);
+      if (existe) return res.status(409).json({ error: "Este nome de usuário já está em uso" });
+      await run("UPDATE users SET username = ? WHERE id = ?", [novo, alvo.id]);
+    }
+  }
+  if (role !== undefined) {
+    if (!ROLES.includes(role)) return res.status(400).json({ error: "Perfil inválido" });
+    if (alvo.id === req.user.id && role !== "admin")
+      return res.status(400).json({ error: "Você não pode remover seu próprio perfil de admin" });
+    if (alvo.role === "admin" && role !== "admin") {
+      const admins = await get("SELECT COUNT(*) AS c FROM users WHERE role = 'admin'");
+      if (Number(admins.c) <= 1)
+        return res.status(400).json({ error: "Deve existir ao menos 1 administrador" });
+    }
+    await run("UPDATE users SET role = ? WHERE id = ?", [role, alvo.id]);
+  }
+  if (password !== undefined && String(password).length > 0) {
+    if (String(password).length < 4)
+      return res.status(400).json({ error: "Senha deve ter ao menos 4 caracteres" });
+    await run("UPDATE users SET password_hash = ? WHERE id = ?", [bcrypt.hashSync(String(password), 10), alvo.id]);
+  }
+  res.json(await get("SELECT id, username, role, created_at FROM users WHERE id = ?", [alvo.id]));
+}));
+
+app.delete("/api/users/:id", auth, adminOnly, ah(async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ error: "ID inválido" });
+  if (Number(req.params.id) === req.user.id)
+    return res.status(400).json({ error: "Você não pode excluir a própria conta" });
+  const alvo = await get("SELECT * FROM users WHERE id = ?", [Number(req.params.id)]);
+  if (!alvo) return res.status(404).json({ error: "Usuário não encontrado" });
+  if (alvo.role === "admin") {
+    const admins = await get("SELECT COUNT(*) AS c FROM users WHERE role = 'admin'");
+    if (Number(admins.c) <= 1)
+      return res.status(400).json({ error: "Deve existir ao menos 1 administrador" });
+  }
+  await run("DELETE FROM webauthn_credentials WHERE user_id = ?", [alvo.id]);
+  await run("DELETE FROM users WHERE id = ?", [alvo.id]);
+  res.json({ ok: true });
+}));
 
 webauthnRoutes({ app, auth, ah, all, get, run, insert, jwt, JWT_SECRET });
 

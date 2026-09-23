@@ -18,6 +18,7 @@ const SCHEMA_SQLITE = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
     created_at TEXT DEFAULT (datetime('now'))
   );
   CREATE TABLE IF NOT EXISTS clientes (
@@ -103,6 +104,7 @@ const SCHEMA_PG = `
     id SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
     created_at TIMESTAMP DEFAULT NOW()
   );
   CREATE TABLE IF NOT EXISTS clientes (
@@ -205,6 +207,23 @@ export async function initDb() {
 // para a versão 2 (pedido com múltiplos itens + semana + entrega + status).
 async function migrate() {
   if (usePg) {
+    const userCols = (
+      await pool.query(`SELECT column_name FROM information_schema.columns WHERE table_name = 'users'`)
+    ).rows.map((r) => r.column_name);
+    if (!userCols.includes("role"))
+      await pool.query(`ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'`);
+    await pool.query(`UPDATE users SET role = 'admin' WHERE username = 'admin'`);
+    await migratePedidosPg();
+  } else {
+    const userCols = lite.prepare(`PRAGMA table_info(users)`).all().map((c) => c.name);
+    if (!userCols.includes("role"))
+      lite.exec(`ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'`);
+    lite.exec(`UPDATE users SET role = 'admin' WHERE username = 'admin'`);
+    migratePedidosLite();
+  }
+}
+
+async function migratePedidosPg() {
     const cols = (
       await pool.query(`SELECT column_name FROM information_schema.columns WHERE table_name = 'pedidos'`)
     ).rows.map((r) => r.column_name);
@@ -224,7 +243,9 @@ async function migrate() {
       await pool.query(`ALTER TABLE pedidos DROP COLUMN preco_unitario`);
       console.log("Migração: pedidos v1 -> v2 (Postgres) concluída");
     }
-  } else {
+}
+
+function migratePedidosLite() {
     const cols = lite.prepare(`PRAGMA table_info(pedidos)`).all().map((c) => c.name);
     if (!cols.includes("semana_id"))
       lite.exec(`ALTER TABLE pedidos ADD COLUMN semana_id INTEGER REFERENCES semanas(id) ON DELETE SET NULL`);
@@ -241,7 +262,6 @@ async function migrate() {
       lite.exec(`ALTER TABLE pedidos DROP COLUMN preco_unitario`);
       console.log("Migração: pedidos v1 -> v2 (SQLite) concluída");
     }
-  }
 }
 
 // Converte placeholders ? do SQLite para $1, $2... do Postgres

@@ -2,42 +2,46 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
-const GRUPOS = [
-  {
-    titulo: "Início",
-    itens: [{ to: "/", label: "Dashboard", end: true }]
-  },
-  {
-    titulo: "Encomendas",
-    itens: [
-      { to: "/semanas", label: "Semanas" },
-      { to: "/mensagens", label: "Mensagens" },
-      { to: "/pedidos", label: "Pedidos" },
-      { to: "/compras-semana", label: "Compras da Semana" }
-    ]
-  },
-  {
-    titulo: "Cozinha",
-    itens: [
-      { to: "/cardapios", label: "Pratos" },
-      { to: "/ingredientes", label: "Ingredientes" }
-    ]
-  },
-  {
-    titulo: "Geral",
-    itens: [
-      { to: "/lista-corriqueira", label: "Lista Corriqueira" },
-      { to: "/clientes", label: "Clientes" },
-      { to: "/dispositivos", label: "Dispositivos" }
-    ]
-  }
-];
-
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
   const [aberto, setAberto] = useState(false);
+
+  const GRUPOS = [
+    {
+      titulo: "Início",
+      itens: [{ to: "/", label: "Dashboard", end: true }]
+    },
+    {
+      titulo: "Encomendas",
+      itens: [
+        { to: "/semanas", label: "Semanas" },
+        { to: "/mensagens", label: "Mensagens" },
+        { to: "/pedidos", label: "Pedidos" },
+        { to: "/compras-semana", label: "Compras da Semana" }
+      ]
+    },
+    {
+      titulo: "Cozinha",
+      itens: [
+        { to: "/cardapios", label: "Pratos" },
+        { to: "/ingredientes", label: "Ingredientes" }
+      ]
+    },
+    {
+      titulo: "Geral",
+      itens: [
+        { to: "/lista-corriqueira", label: "Lista Corriqueira" },
+        { to: "/clientes", label: "Clientes" },
+        { to: "/dispositivos", label: "Dispositivos" },
+        { to: "/minha-conta", label: "Minha Conta" }
+      ]
+    },
+    ...(role === "admin"
+      ? [{ titulo: "Admin", itens: [{ to: "/usuarios", label: "Usuários" }] }]
+      : [])
+  ];
 
   // Fecha o drawer ao navegar (mobile)
   useEffect(() => {
