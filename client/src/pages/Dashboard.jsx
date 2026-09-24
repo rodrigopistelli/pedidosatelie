@@ -1,35 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, formatBRL } from "../api";
-import { useAuth } from "../AuthContext";
-
-const ATALHOS = [
-  {
-    titulo: "Encomendas",
-    itens: [
-      { to: "/semanas", label: "Semanas" },
-      { to: "/mensagens", label: "Mensagens" },
-      { to: "/pedidos", label: "Pedidos" },
-      { to: "/compras-semana", label: "Compras da Semana" }
-    ]
-  },
-  {
-    titulo: "Cozinha",
-    itens: [
-      { to: "/cardapios", label: "Pratos" },
-      { to: "/ingredientes", label: "Ingredientes" }
-    ]
-  },
-  {
-    titulo: "Geral",
-    itens: [
-      { to: "/lista-corriqueira", label: "Lista Corriqueira" },
-      { to: "/clientes", label: "Clientes" },
-      { to: "/dispositivos", label: "Dispositivos" },
-      { to: "/minha-conta", label: "Minha Conta" }
-    ]
-  }
-];
 
 const STATUS = {
   pendente: "Pendentes", confirmado: "Confirmados", em_producao: "Em produção",
@@ -37,7 +8,6 @@ const STATUS = {
 };
 
 export default function Dashboard() {
-  const { role } = useAuth();
   const [stats, setStats] = useState({ clientes: 0, pratos: 0, pedidos: 0, faturamento: 0, porStatus: {}, proximas: [] });
 
   useEffect(() => {
@@ -65,25 +35,10 @@ export default function Dashboard() {
   return (
     <div className="container">
       <h1>Dashboard</h1>
-      <div className="card">
-        <h2>Acesso rápido</h2>
-        {[...ATALHOS, ...(role === "admin" ? [{ titulo: "Admin", itens: [{ to: "/usuarios", label: "Usuários" }] }] : [])].map((g) => (
-          <div key={g.titulo} style={{ marginBottom: 10 }}>
-            <small style={{ color: "#666", textTransform: "uppercase", letterSpacing: 1, fontSize: 11 }}>{g.titulo}</small>
-            <div className="toolbar" style={{ marginTop: 6, marginBottom: 0 }}>
-              {g.itens.map((it) => (
-                <Link key={it.to} to={it.to} className="btn small secondary" style={{ textDecoration: "none" }}>
-                  {it.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
       <div className="kpis">
-        <div className="card"><strong>{stats.clientes}</strong><span>Clientes</span></div>
-        <div className="card"><strong>{stats.pratos}</strong><span>Pratos</span></div>
-        <div className="card"><strong>{stats.pedidos}</strong><span>Pedidos</span></div>
+        <div className="card"><strong>{stats.clientes}</strong><Link to="/clientes">Clientes</Link></div>
+        <div className="card"><strong>{stats.pratos}</strong><Link to="/cardapios">Pratos</Link></div>
+        <div className="card"><strong>{stats.pedidos}</strong><Link to="/pedidos">Pedidos</Link></div>
       </div>
       <div className="card">
         <h2>Faturamento (não cancelados)</h2>
