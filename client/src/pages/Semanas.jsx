@@ -128,14 +128,14 @@ export default function Semanas() {
       <div className="card">
         <h2>Semanas</h2>
         <table>
-          <thead><tr><th>Título</th><th>Período</th><th>Status</th><th>Pedidos</th><th>Ações</th></tr></thead>
+          <thead><tr><th></th><th>Título</th><th>Período</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody>
             {lista.map((s) => (
               <tr key={s.id}>
+                <td><IconBtn titulo="Abrir semana" onClick={() => abrir(s.id)}><FolderOpen size={16} /></IconBtn></td>
                 <td>{s.titulo}</td>
                 <td>{s.data_inicio || "-"} a {s.data_fim || "-"}</td>
                 <td>{STATUS[s.status] || s.status}</td>
-                <td><IconBtn titulo="Abrir semana" onClick={() => abrir(s.id)}><FolderOpen size={16} /></IconBtn></td>
                 <td><div className="row-actions">
                   <IconBtn titulo="Editar semana" variante="secundaria" onClick={() => {
                     setEditId(s.id);
