@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { FolderOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { api, formatBRL } from "../api";
-import { msgSemana, waLink, copyText } from "../whatsapp";
 import IconBtn from "../components/IconBtn";
 
 const empty = { titulo: "", data_inicio: "", data_fim: "", observacao: "" };
@@ -13,19 +12,15 @@ export default function Semanas() {
   const [editId, setEditId] = useState(null);
   const [detalhe, setDetalhe] = useState(null);
   const [cardapios, setCardapios] = useState([]);
-  const [clientes, setClientes] = useState([]);
   const [addPrato, setAddPrato] = useState("");
-  const [cliEnvio, setCliEnvio] = useState("");
   const [error, setError] = useState("");
-  const [aviso, setAviso] = useState("");
 
   async function carregar() {
-    const [s, m, c] = await Promise.all([
-      api("/api/semanas"), api("/api/cardapios"), api("/api/clientes")
+    const [s, m] = await Promise.all([
+      api("/api/semanas"), api("/api/cardapios")
     ]);
     setLista(s);
     setCardapios(m);
-    setClientes(c);
   }
 
   useEffect(() => { carregar().catch((e) => setError(e.message)); }, []);
@@ -83,25 +78,10 @@ export default function Semanas() {
     } catch (err) { setError(err.message); }
   }
 
-  function copiarMensagem() {
-    if (!detalhe) return;
-    copyText(msgSemana(detalhe, detalhe.itens || []))
-      .then(() => setAviso("Mensagem copiada! Cole na lista de transmissão do WhatsApp."))
-      .catch(() => setError("Não foi possível copiar."));
-  }
-
-  function enviarCliente() {
-    if (!detalhe || !cliEnvio) return;
-    const c = clientes.find((x) => String(x.id) === String(cliEnvio));
-    if (!c) return;
-    window.open(waLink(c.telefone, msgSemana(detalhe, detalhe.itens || [])), "_blank");
-  }
-
   return (
     <div className="container">
       <h1>Cardápio da Semana</h1>
       {error && <div className="error">{error}</div>}
-      {aviso && <div className="card" style={{ background: "#dcfce7" }}>{aviso}</div>}
 
       <div className="card">
         <h2>{editId ? "Editar semana" : "Nova semana"}</h2>
@@ -178,18 +158,6 @@ export default function Semanas() {
               ))}
             </tbody>
           </table>
-          <h3>Divulgar no WhatsApp</h3>
-          <div className="toolbar">
-            <button className="btn small" onClick={copiarMensagem}>Copiar mensagem da semana</button>
-            <select value={cliEnvio} onChange={(e) => setCliEnvio(e.target.value)} style={{ maxWidth: 260 }}>
-              <option value="">Enviar direto para...</option>
-              {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-            </select>
-            <button className="btn small secondary" onClick={enviarCliente}>Abrir WhatsApp</button>
-          </div>
-          <pre style={{ whiteSpace: "pre-wrap", background: "#f8fafc", padding: 12, borderRadius: 8, fontSize: 13 }}>
-            {msgSemana(detalhe, detalhe.itens || [])}
-          </pre>
         </div>
       )}
     </div>
