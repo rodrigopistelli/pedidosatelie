@@ -63,7 +63,7 @@ export default function Dashboard() {
               {stats.proximas.map((p) => (
                 <tr key={p.id}>
                   <td>{p.data_entrega}</td>
-                  <td>{p.cliente_nome}</td>
+                  <td><Link to={`/pedidos#pedido-${p.id}`}>{p.cliente_nome}</Link></td>
                   <td>{formatBRL(p.total)}</td>
                 </tr>
               ))}

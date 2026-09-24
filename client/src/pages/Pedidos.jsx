@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { ArrowRight, Ban, MessageCircle, Pencil, Plus, Trash2, X } from "lucide-react";
 import { api, formatBRL } from "../api";
 import { msgPedido, waLink } from "../whatsapp";
@@ -24,6 +25,8 @@ export default function Pedidos() {
   const [fStatus, setFStatus] = useState("");
   const [error, setError] = useState("");
   const sel = useSelecao();
+  const loc = useLocation();
+  const [destaque, setDestaque] = useState(null);
 
   async function carregar() {
     const params = new URLSearchParams();
@@ -40,6 +43,19 @@ export default function Pedidos() {
   }
 
   useEffect(() => { carregar().catch((e) => setError(e.message)); }, [fSemana, fStatus]);
+
+  // Vindo do Dashboard (#pedido-ID): rola até o pedido e destaca a linha
+  useEffect(() => {
+    const m = (loc.hash || "").match(/^#pedido-(\d+)$/);
+    if (!m) return;
+    const id = Number(m[1]);
+    setDestaque(id);
+    const t = setTimeout(() => {
+      document.getElementById(`pedido-${id}`)?.scrollIntoView({ block: "center" });
+    }, 300);
+    const t2 = setTimeout(() => setDestaque(null), 4000);
+    return () => { clearTimeout(t); clearTimeout(t2); };
+  }, [loc.hash, pedidos.length]);
 
   const totalPrev = form.itens.reduce((sum, it) => {
     const m = cardapios.find((x) => String(x.id) === String(it.cardapio_id));
@@ -187,7 +203,7 @@ export default function Pedidos() {
           <thead><tr><th><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.todosMarcados(pedidos)} onChange={() => sel.alternarTodos(pedidos)} /></th><th>#</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Entrega</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody>
             {pedidos.map((p) => (
-              <tr key={p.id}>
+              <tr key={p.id} id={`pedido-${p.id}`} className={destaque === p.id ? "linha-destaque" : ""}>
                 <td><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.marcado(p.id)} onChange={() => sel.alternar(p.id)} /></td>
                 <td>{p.id}</td>
                 <td>{p.cliente_nome}<br /><small>{p.semana_titulo || "Avulso"}</small></td>

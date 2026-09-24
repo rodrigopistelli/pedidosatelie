@@ -168,6 +168,7 @@ th { background: #f8fafc; }
 .icon-btn.perigo { background: #dc2626; }
 .icon-btn.sucesso { background: #16a34a; }
 .icon-btn:disabled { opacity: .5; cursor: default; }
+.linha-destaque td { background: #fef9c3; }
 .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
 .kpis .card { text-align: center; margin: 0; }
 .kpis strong { font-size: 26px; display: block; }
