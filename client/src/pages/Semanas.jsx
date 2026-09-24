@@ -14,6 +14,7 @@ export default function Semanas() {
   const [cardapios, setCardapios] = useState([]);
   const [addPrato, setAddPrato] = useState("");
   const [error, setError] = useState("");
+  const [relatorio, setRelatorio] = useState(null);
 
   async function carregar() {
     const [s, m] = await Promise.all([
@@ -27,8 +28,10 @@ export default function Semanas() {
 
   async function abrir(id) {
     setError("");
-    try { setDetalhe(await api(`/api/semanas/${id}`)); }
-    catch (err) { setError(err.message); }
+    try {
+      setDetalhe(await api(`/api/semanas/${id}`));
+      setRelatorio(null);
+    } catch (err) { setError(err.message); }
   }
 
   async function salvar(e) {
@@ -68,6 +71,26 @@ export default function Semanas() {
       await api(`/api/semanas/${detalhe.id}/itens`, { method: "POST", body: JSON.stringify({ cardapio_id: addPrato }) });
       setAddPrato("");
       abrir(detalhe.id);
+    } catch (err) { setError(err.message); }
+  }
+
+  async function carregarRelatorio() {
+    if (relatorio) { setRelatorio(null); return; }
+    try {
+      const pedidos = await api(`/api/pedidos?semana_id=${detalhe.id}`);
+      const validos = pedidos.filter((p) => p.status !== "cancelado");
+      const porPrato = new Map();
+      for (const p of validos) {
+        for (const it of p.itens || []) {
+          porPrato.set(it.cardapio_nome, (porPrato.get(it.cardapio_nome) || 0) + Number(it.quantidade));
+        }
+      }
+      setRelatorio({
+        pedidos,
+        totalPedidos: pedidos.length,
+        faturamento: validos.reduce((s, p) => s + Number(p.total || 0), 0),
+        porPrato: [...porPrato.entries()].map(([prato, unidades]) => ({ prato, unidades }))
+      });
     } catch (err) { setError(err.message); }
   }
 
@@ -158,6 +181,44 @@ export default function Semanas() {
               ))}
             </tbody>
           </table>
+          <h3>Relatório de pedidos</h3>
+          <div className="toolbar">
+            <button className="btn small" onClick={carregarRelatorio}>
+              {relatorio ? "Ocultar relatório" : "Listar pedidos da semana"}
+            </button>
+            {relatorio && <button className="btn small secondary" onClick={() => window.print()}>Imprimir</button>}
+          </div>
+          {relatorio && (
+            <>
+              <p>Pedidos: <b>{relatorio.totalPedidos}</b> · Faturamento (não cancelados): <b>{formatBRL(relatorio.faturamento)}</b></p>
+              <h3>Resumo por prato</h3>
+              <table>
+                <thead><tr><th>Prato</th><th>Unidades</th></tr></thead>
+                <tbody>
+                  {relatorio.porPrato.map((r, i) => (
+                    <tr key={i}><td>{r.prato}</td><td>{r.unidades}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+              <h3 style={{ marginTop: 12 }}>Pedidos</h3>
+              <table>
+                <thead><tr><th>#</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Entrega</th><th>Status</th></tr></thead>
+                <tbody>
+                  {relatorio.pedidos.map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.id}</td>
+                      <td>{p.cliente_nome}</td>
+                      <td>{(p.itens || []).map((it) => `${it.quantidade}x ${it.cardapio_nome}`).join(", ")}</td>
+                      <td>{formatBRL(p.total)}</td>
+                      <td>{p.data_entrega || "-"}</td>
+                      <td>{p.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {relatorio.pedidos.length === 0 && <p>Nenhum pedido nesta semana.</p>}
+            </>
+          )}
         </div>
       )}
     </div>
