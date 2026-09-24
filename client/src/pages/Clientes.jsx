@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { api } from "../api";
 import IconBtn from "../components/IconBtn";
+import { useSelecao } from "../components/useSelecao";
 
 const empty = { nome: "", telefone: "", endereco: "" };
 
@@ -11,6 +12,7 @@ export default function Clientes() {
   const [editId, setEditId] = useState(null);
   const [busca, setBusca] = useState("");
   const [error, setError] = useState("");
+  const sel = useSelecao();
 
   async function carregar(q = "") {
     const data = await api(`/api/clientes${q ? `?q=${encodeURIComponent(q)}` : ""}`);
@@ -45,6 +47,14 @@ export default function Clientes() {
     catch (err) { setError(err.message); }
   }
 
+  async function excluirSelecionados() {
+    if (!sel.ids.length) return;
+    if (!confirm(`Excluir ${sel.ids.length} cliente(s) selecionado(s)?`)) return;
+    const falhas = await sel.excluirEmMassa({ lista, rota: "/api/clientes", rotulo: (c) => c.nome });
+    carregar(busca);
+    if (falhas.length) setError(`Não excluídos: ${falhas.join(" · ")}`);
+  }
+
   return (
     <div className="container">
       <h1>Clientes</h1>
@@ -74,12 +84,18 @@ export default function Clientes() {
         <div className="toolbar">
           <input placeholder="Buscar por nome, telefone..." value={busca}
             onChange={(e) => { setBusca(e.target.value); carregar(e.target.value); }} />
+          {sel.ids.length > 0 && (
+            <button className="btn small danger" onClick={excluirSelecionados}>
+              Excluir ({sel.ids.length})
+            </button>
+          )}
         </div>
         <table>
-          <thead><tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Endereço</th><th>Ações</th></tr></thead>
+          <thead><tr><th><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.todosMarcados(lista)} onChange={() => sel.alternarTodos(lista)} /></th><th>ID</th><th>Nome</th><th>Telefone</th><th>Endereço</th><th>Ações</th></tr></thead>
           <tbody>
             {lista.map((c) => (
               <tr key={c.id}>
+                <td><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.marcado(c.id)} onChange={() => sel.alternar(c.id)} /></td>
                 <td>{c.id}</td><td>{c.nome}</td><td>{c.telefone}</td><td>{c.endereco}</td>
                 <td><div className="row-actions">
                   <IconBtn titulo="Editar cliente" variante="secundaria" onClick={() => editar(c)}><Pencil size={16} /></IconBtn>

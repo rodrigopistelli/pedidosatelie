@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { api } from "../api";
 import IconBtn from "../components/IconBtn";
+import { useSelecao } from "../components/useSelecao";
 
 const UNIDADES = ["un", "kg", "g", "L", "mL", "pacote", "caixa", "lata", "dúzia"];
 
@@ -10,6 +11,7 @@ export default function ListaCorriqueira() {
   const [form, setForm] = useState({ nome: "", quantidade: 1, unidade: "un", observacao: "" });
   const [editId, setEditId] = useState(null);
   const [error, setError] = useState("");
+  const sel = useSelecao();
 
   async function carregar() {
     setLista(await api("/api/lista-corriqueira"));
@@ -42,6 +44,14 @@ export default function ListaCorriqueira() {
     if (!confirm("Remover este item?")) return;
     try { await api(`/api/lista-corriqueira/${id}`, { method: "DELETE" }); carregar(); }
     catch (err) { setError(err.message); }
+  }
+
+  async function excluirSelecionados() {
+    if (!sel.ids.length) return;
+    if (!confirm(`Remover ${sel.ids.length} item(ns) selecionado(s)?`)) return;
+    const falhas = await sel.excluirEmMassa({ lista, rota: "/api/lista-corriqueira", rotulo: (i) => i.nome });
+    carregar();
+    if (falhas.length) setError(`Não removidos: ${falhas.join(" · ")}`);
   }
 
   async function limparComprados() {
@@ -91,13 +101,19 @@ export default function ListaCorriqueira() {
         <div className="toolbar">
           <span>Faltam <b>{faltam}</b> de <b>{lista.length}</b> itens</span>
           <span className="spacer" style={{ flex: 1 }} />
+          {sel.ids.length > 0 && (
+            <button className="btn small danger" onClick={excluirSelecionados}>
+              Excluir ({sel.ids.length})
+            </button>
+          )}
           <button className="btn small secondary" onClick={limparComprados}>Limpar já comprados</button>
         </div>
         <table>
-          <thead><tr><th></th><th>Item</th><th>Qtd</th><th>Obs.</th><th>Ações</th></tr></thead>
+          <thead><tr><th><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.todosMarcados(lista)} onChange={() => sel.alternarTodos(lista)} /></th><th></th><th>Item</th><th>Qtd</th><th>Obs.</th><th>Ações</th></tr></thead>
           <tbody>
             {lista.map((i) => (
               <tr key={i.id} style={i.comprado ? { textDecoration: "line-through", color: "#888" } : {}}>
+                <td><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.marcado(i.id)} onChange={() => sel.alternar(i.id)} /></td>
                 <td><input type="checkbox" style={{ width: "auto" }} checked={!!i.comprado} onChange={() => alternar(i)} /></td>
                 <td>{i.nome}</td>
                 <td>{i.quantidade} {i.unidade}</td>

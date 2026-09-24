@@ -3,6 +3,7 @@ import { ArrowRight, Ban, MessageCircle, Pencil, Plus, Trash2, X } from "lucide-
 import { api, formatBRL } from "../api";
 import { msgPedido, waLink } from "../whatsapp";
 import IconBtn from "../components/IconBtn";
+import { useSelecao } from "../components/useSelecao";
 
 const HOJE = new Date().toISOString().slice(0, 10);
 const empty = { cliente_id: "", semana_id: "", data: HOJE, data_entrega: "", observacao: "", itens: [{ cardapio_id: "", quantidade: 1 }] };
@@ -22,6 +23,7 @@ export default function Pedidos() {
   const [fSemana, setFSemana] = useState("");
   const [fStatus, setFStatus] = useState("");
   const [error, setError] = useState("");
+  const sel = useSelecao();
 
   async function carregar() {
     const params = new URLSearchParams();
@@ -100,6 +102,14 @@ export default function Pedidos() {
     catch (err) { setError(err.message); }
   }
 
+  async function excluirSelecionados() {
+    if (!sel.ids.length) return;
+    if (!confirm(`Excluir ${sel.ids.length} pedido(s) selecionado(s) definitivamente?`)) return;
+    const falhas = await sel.excluirEmMassa({ lista: pedidos, rota: "/api/pedidos", rotulo: (p) => `#${p.id} ${p.cliente_nome}` });
+    carregar();
+    if (falhas.length) setError(`Não excluídos: ${falhas.join(" · ")}`);
+  }
+
   function confirmarWhats(p) {
     window.open(waLink(p.cliente_telefone, msgPedido(p)), "_blank");
   }
@@ -167,12 +177,18 @@ export default function Pedidos() {
             <option value="">Todos os status</option>
             {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
+          {sel.ids.length > 0 && (
+            <button className="btn small danger" onClick={excluirSelecionados}>
+              Excluir ({sel.ids.length})
+            </button>
+          )}
         </div>
         <table>
-          <thead><tr><th>#</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Entrega</th><th>Status</th><th>Ações</th></tr></thead>
+          <thead><tr><th><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.todosMarcados(pedidos)} onChange={() => sel.alternarTodos(pedidos)} /></th><th>#</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Entrega</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody>
             {pedidos.map((p) => (
               <tr key={p.id}>
+                <td><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.marcado(p.id)} onChange={() => sel.alternar(p.id)} /></td>
                 <td>{p.id}</td>
                 <td>{p.cliente_nome}<br /><small>{p.semana_titulo || "Avulso"}</small></td>
                 <td>{p.itens.map((it) => `${it.quantidade}x ${it.cardapio_nome}`).join(", ")}</td>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2, ClipboardList } from "lucide-react";
 import { api, formatBRL } from "../api";
 import IconBtn from "../components/IconBtn";
+import { useSelecao } from "../components/useSelecao";
 
 const empty = { nome: "", descricao: "", preco: "" };
 
@@ -12,6 +13,7 @@ export default function Cardapios() {
   const [busca, setBusca] = useState("");
   const [error, setError] = useState("");
   const [fichaId, setFichaId] = useState(null);
+  const sel = useSelecao();
   const [ficha, setFicha] = useState([]);
   const [ingredientes, setIngredientes] = useState([]);
   const [novoIng, setNovoIng] = useState({ ingrediente_id: "", quantidade: "" });
@@ -50,6 +52,14 @@ export default function Cardapios() {
     if (!confirm("Excluir este prato?")) return;
     try { await api(`/api/cardapios/${id}`, { method: "DELETE" }); carregar(busca); }
     catch (err) { setError(err.message); }
+  }
+
+  async function excluirSelecionados() {
+    if (!sel.ids.length) return;
+    if (!confirm(`Excluir ${sel.ids.length} prato(s) selecionado(s)?`)) return;
+    const falhas = await sel.excluirEmMassa({ lista, rota: "/api/cardapios", rotulo: (m) => m.nome });
+    carregar(busca);
+    if (falhas.length) setError(`Não excluídos: ${falhas.join(" · ")}`);
   }
 
   async function abrirFicha(id) {
@@ -100,12 +110,18 @@ export default function Cardapios() {
         <div className="toolbar">
           <input placeholder="Buscar prato..." value={busca}
             onChange={(e) => { setBusca(e.target.value); carregar(e.target.value); }} />
+          {sel.ids.length > 0 && (
+            <button className="btn small danger" onClick={excluirSelecionados}>
+              Excluir ({sel.ids.length})
+            </button>
+          )}
         </div>
         <table>
-          <thead><tr><th>ID</th><th>Nome</th><th>Descrição</th><th>Preço</th><th>Ações</th></tr></thead>
+          <thead><tr><th><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.todosMarcados(lista)} onChange={() => sel.alternarTodos(lista)} /></th><th>ID</th><th>Nome</th><th>Descrição</th><th>Preço</th><th>Ações</th></tr></thead>
           <tbody>
             {lista.map((m) => (
               <tr key={m.id}>
+                <td><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.marcado(m.id)} onChange={() => sel.alternar(m.id)} /></td>
                 <td>{m.id}</td><td>{m.nome}</td><td>{m.descricao}</td>
                 <td>{formatBRL(m.preco)}</td>
                 <td><div className="row-actions">

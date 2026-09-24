@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FolderOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { api, formatBRL } from "../api";
 import IconBtn from "../components/IconBtn";
+import { useSelecao } from "../components/useSelecao";
 
 const empty = { titulo: "", data_inicio: "", data_fim: "", observacao: "" };
 const STATUS = { rascunho: "Rascunho", aberto: "Aberta", fechado: "Fechada" };
@@ -15,6 +16,7 @@ export default function Semanas() {
   const [addPrato, setAddPrato] = useState("");
   const [error, setError] = useState("");
   const [relatorio, setRelatorio] = useState(null);
+  const sel = useSelecao();
 
   async function carregar() {
     const [s, m] = await Promise.all([
@@ -63,6 +65,16 @@ export default function Semanas() {
       setDetalhe(null);
       carregar();
     } catch (err) { setError(err.message); }
+  }
+
+  async function excluirSelecionados() {
+    if (!sel.ids.length) return;
+    if (!confirm(`Excluir ${sel.ids.length} semana(s) selecionada(s)? Os pedidos serão mantidos, sem semana.`)) return;
+    const falhas = await sel.excluirEmMassa({ lista, rota: "/api/semanas", rotulo: (s) => s.titulo });
+    setDetalhe(null);
+    setRelatorio(null);
+    carregar();
+    if (falhas.length) setError(`Não excluídas: ${falhas.join(" · ")}`);
   }
 
   async function adicionarPrato() {
@@ -130,11 +142,19 @@ export default function Semanas() {
 
       <div className="card nao-imprimir">
         <h2>Semanas</h2>
+        {sel.ids.length > 0 && (
+          <div className="toolbar">
+            <button className="btn small danger" onClick={excluirSelecionados}>
+              Excluir ({sel.ids.length})
+            </button>
+          </div>
+        )}
         <table>
-          <thead><tr><th></th><th>Título</th><th>Período</th><th>Status</th><th>Ações</th></tr></thead>
+          <thead><tr><th><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.todosMarcados(lista)} onChange={() => sel.alternarTodos(lista)} /></th><th></th><th>Título</th><th>Período</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody>
             {lista.map((s) => (
               <tr key={s.id}>
+                <td><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.marcado(s.id)} onChange={() => sel.alternar(s.id)} /></td>
                 <td><IconBtn titulo="Abrir semana" onClick={() => abrir(s.id)}><FolderOpen size={16} /></IconBtn></td>
                 <td>{s.titulo}</td>
                 <td>{s.data_inicio || "-"} a {s.data_fim || "-"}</td>

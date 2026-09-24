@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { api } from "../api";
 import IconBtn from "../components/IconBtn";
+import { useSelecao } from "../components/useSelecao";
 
 const UNIDADES = ["un", "kg", "g", "L", "mL", "pacote", "caixa", "lata", "dúzia"];
 
@@ -11,6 +12,7 @@ export default function Ingredientes() {
   const [editId, setEditId] = useState(null);
   const [busca, setBusca] = useState("");
   const [error, setError] = useState("");
+  const sel = useSelecao();
 
   async function carregar(q = "") {
     setLista(await api(`/api/ingredientes${q ? `?q=${encodeURIComponent(q)}` : ""}`));
@@ -34,6 +36,14 @@ export default function Ingredientes() {
     if (!confirm("Excluir este ingrediente?")) return;
     try { await api(`/api/ingredientes/${id}`, { method: "DELETE" }); carregar(busca); }
     catch (err) { setError(err.message); }
+  }
+
+  async function excluirSelecionados() {
+    if (!sel.ids.length) return;
+    if (!confirm(`Excluir ${sel.ids.length} ingrediente(s) selecionado(s)?`)) return;
+    const falhas = await sel.excluirEmMassa({ lista, rota: "/api/ingredientes", rotulo: (i) => i.nome });
+    carregar(busca);
+    if (falhas.length) setError(`Não excluídos: ${falhas.join(" · ")}`);
   }
 
   return (
@@ -63,12 +73,18 @@ export default function Ingredientes() {
         <div className="toolbar">
           <input placeholder="Buscar ingrediente..." value={busca}
             onChange={(e) => { setBusca(e.target.value); carregar(e.target.value); }} />
+          {sel.ids.length > 0 && (
+            <button className="btn small danger" onClick={excluirSelecionados}>
+              Excluir ({sel.ids.length})
+            </button>
+          )}
         </div>
         <table>
-          <thead><tr><th>ID</th><th>Nome</th><th>Unidade</th><th>Ações</th></tr></thead>
+          <thead><tr><th><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.todosMarcados(lista)} onChange={() => sel.alternarTodos(lista)} /></th><th>ID</th><th>Nome</th><th>Unidade</th><th>Ações</th></tr></thead>
           <tbody>
             {lista.map((i) => (
               <tr key={i.id}>
+                <td><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.marcado(i.id)} onChange={() => sel.alternar(i.id)} /></td>
                 <td>{i.id}</td><td>{i.nome}</td><td>{i.unidade}</td>
                 <td><div className="row-actions">
                   <IconBtn titulo="Editar ingrediente" variante="secundaria" onClick={() => { setEditId(i.id); setForm({ nome: i.nome, unidade: i.unidade }); }}><Pencil size={16} /></IconBtn>

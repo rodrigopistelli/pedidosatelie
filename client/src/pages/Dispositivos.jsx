@@ -3,6 +3,7 @@ import { startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/brow
 import { Trash2 } from "lucide-react";
 import { api } from "../api";
 import IconBtn from "../components/IconBtn";
+import { useSelecao } from "../components/useSelecao";
 
 export default function Dispositivos() {
   const [lista, setLista] = useState([]);
@@ -11,6 +12,7 @@ export default function Dispositivos() {
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(false);
   const suportado = browserSupportsWebAuthn();
+  const sel = useSelecao();
 
   async function carregar() {
     setLista(await api("/api/webauthn/devices"));
@@ -50,6 +52,14 @@ export default function Dispositivos() {
     } catch (err) { setError(err.message); }
   }
 
+  async function excluirSelecionados() {
+    if (!sel.ids.length) return;
+    if (!confirm(`Remover ${sel.ids.length} aparelho(s) selecionado(s)?`)) return;
+    const falhas = await sel.excluirEmMassa({ lista, rota: "/api/webauthn/devices", rotulo: (d) => d.nome || d.id });
+    carregar();
+    if (falhas.length) setError(`Não removidos: ${falhas.join(" · ")}`);
+  }
+
   return (
     <div className="container">
       <h1>Dispositivos (biometria / PIN)</h1>
@@ -70,11 +80,19 @@ export default function Dispositivos() {
       </div>
       <div className="card">
         <h2>Aparelhos cadastrados</h2>
+        {sel.ids.length > 0 && (
+          <div className="toolbar">
+            <button className="btn small danger" onClick={excluirSelecionados}>
+              Excluir ({sel.ids.length})
+            </button>
+          </div>
+        )}
         <table>
-          <thead><tr><th>Nome</th><th>Cadastrado em</th><th></th></tr></thead>
+          <thead><tr><th><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.todosMarcados(lista)} onChange={() => sel.alternarTodos(lista)} /></th><th>Nome</th><th>Cadastrado em</th><th></th></tr></thead>
           <tbody>
             {lista.map((d) => (
               <tr key={d.id}>
+                <td><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.marcado(d.id)} onChange={() => sel.alternar(d.id)} /></td>
                 <td>{d.nome || "(sem nome)"}</td>
                 <td>{d.created_at}</td>
                 <td><IconBtn titulo="Remover aparelho" variante="perigo" onClick={() => remover(d.id)}><Trash2 size={16} /></IconBtn></td>

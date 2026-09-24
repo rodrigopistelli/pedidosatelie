@@ -3,6 +3,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { api } from "../api";
 import SenhaInput from "../components/SenhaInput";
 import IconBtn from "../components/IconBtn";
+import { useSelecao } from "../components/useSelecao";
 
 const empty = { username: "", password: "", role: "user" };
 
@@ -13,6 +14,7 @@ export default function Usuarios() {
   const [novaSenha, setNovaSenha] = useState("");
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
+  const sel = useSelecao();
 
   async function carregar() {
     setLista(await api("/api/users"));
@@ -53,6 +55,14 @@ export default function Usuarios() {
     } catch (err) { setError(err.message); }
   }
 
+  async function excluirSelecionados() {
+    if (!sel.ids.length) return;
+    if (!confirm(`Excluir ${sel.ids.length} usuário(s) selecionado(s)?`)) return;
+    const falhas = await sel.excluirEmMassa({ lista, rota: "/api/users", rotulo: (u) => u.username });
+    carregar();
+    if (falhas.length) setError(`Não excluídos: ${falhas.join(" · ")}`);
+  }
+
   return (
     <div className="container">
       <h1>Usuários</h1>
@@ -82,11 +92,19 @@ export default function Usuarios() {
         </form>
       </div>
       <div className="card">
+        {sel.ids.length > 0 && (
+          <div className="toolbar">
+            <button className="btn small danger" onClick={excluirSelecionados}>
+              Excluir ({sel.ids.length})
+            </button>
+          </div>
+        )}
         <table>
-          <thead><tr><th>ID</th><th>Usuário</th><th>Perfil</th><th>Criado em</th><th>Ações</th></tr></thead>
+          <thead><tr><th><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.todosMarcados(lista)} onChange={() => sel.alternarTodos(lista)} /></th><th>ID</th><th>Usuário</th><th>Perfil</th><th>Criado em</th><th>Ações</th></tr></thead>
           <tbody>
             {lista.map((u) => (
               <tr key={u.id}>
+                <td><input type="checkbox" style={{ width: "auto", margin: 0 }} checked={sel.marcado(u.id)} onChange={() => sel.alternar(u.id)} /></td>
                 <td>{u.id}</td>
                 <td>{u.username}</td>
                 <td>{u.role === "admin" ? "Administrador" : "Usuário"}</td>
