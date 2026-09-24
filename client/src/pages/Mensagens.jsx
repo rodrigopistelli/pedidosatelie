@@ -201,8 +201,9 @@ export default function Mensagens() {
       <div className="card">
         <h2>Disparo para todos os clientes</h2>
         <p style={{ color: "#555", fontSize: 13 }}>
-          O app abre cada conversa com a mensagem pronta — você só aperta <b>enviar</b> no WhatsApp.
-          Gratuito e sem risco de bloqueio do número.
+          <b>Caminho mais rápido (WhatsApp Business):</b> copie o texto acima e cole na sua{" "}
+          <b>lista de transmissão</b> — 1 envio alcança todos de uma vez, grátis.
+          Abaixo, o disparo assistido cliente a cliente (ideal para confirmações individuais).
         </p>
         <div className="toolbar">
           <button className="btn small secondary" onClick={() => marcarTodos(true)}>Selecionar todos</button>
