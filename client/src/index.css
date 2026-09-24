@@ -122,6 +122,13 @@ th { background: #f8fafc; }
   .sidebar.aberta { transform: none; }
   .overlay.visivel { display: block; }
   .topbar { display: flex; }
+  /* Mobile: conteúdo contido, sem rolagem horizontal da página */
+  .container { padding: 12px; }
+  .card { padding: 14px; overflow-x: auto; }
+  table { min-width: 560px; font-size: 13px; }
+  th, td { padding: 8px 6px; }
+  .icon-btn { width: 30px; height: 30px; }
+  .toolbar input, .toolbar select { max-width: 100%; }
 }
 .login-wrap {
   min-height: 100vh;
@@ -135,7 +142,7 @@ th { background: #f8fafc; }
 .error { background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
-.row-actions { display: flex; gap: 8px; }
+.row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .icon-btn {
   display: inline-flex;
   align-items: center;
