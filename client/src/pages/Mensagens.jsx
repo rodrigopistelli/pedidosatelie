@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import { msgSemana, waLink, waPhone, copyText } from "../whatsapp";
+import { msgSemana, waLink, copyText } from "../whatsapp";
 
 const EMOJI_GRUPOS = [
   { titulo: "Saudação", emojis: ["👋", "😊", "🙏", "❤️", "🎉", "✨"] },
@@ -18,8 +18,6 @@ export default function Mensagens() {
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
   const [mostrarEmojis, setMostrarEmojis] = useState(false);
-  const [selecionados, setSelecionados] = useState({});
-  const [disparo, setDisparo] = useState(null); // { fila: [ids], indice: number }
   const areaRef = useRef(null);
 
   useEffect(() => {
@@ -90,62 +88,12 @@ export default function Mensagens() {
     window.open(waLink(c.telefone, texto), "_blank");
   }
 
-  // ---- Disparo assistido para todos (gratuito, sem risco de bloqueio) ----
-  const clientesValidos = clientes.filter((c) => waPhone(c.telefone));
-  const clientesSemFone = clientes.filter((c) => !waPhone(c.telefone));
-
-  function todosSelecionados() {
-    const sel = clientesValidos.filter((c) => selecionados[c.id] !== false);
-    return sel;
-  }
-
-  function marcarTodos(v) {
-    const novo = {};
-    for (const c of clientesValidos) novo[c.id] = v;
-    setSelecionados(novo);
-    setDisparo(null);
-  }
-
-  function iniciarDisparo() {
-    const fila = todosSelecionados().map((c) => c.id);
-    if (!fila.length) {
-      setError("Selecione ao menos 1 cliente com telefone válido.");
-      return;
-    }
-    if (!texto.trim()) {
-      setError("Escreva a mensagem antes de disparar.");
-      return;
-    }
-    setError("");
-    setDisparo({ fila, indice: 0 });
-    const primeiro = clientes.find((c) => c.id === fila[0]);
-    window.open(waLink(primeiro.telefone, texto), "_blank");
-  }
-
-  function proximoDisparo(pular = false) {
-    if (!disparo) return;
-    const prox = disparo.indice + 1;
-    if (prox >= disparo.fila.length) {
-      setDisparo({ ...disparo, indice: prox });
-      return;
-    }
-    setDisparo({ ...disparo, indice: prox });
-    if (!pular) {
-      const c = clientes.find((x) => x.id === disparo.fila[prox]);
-      window.open(waLink(c.telefone, texto), "_blank");
-    }
-  }
-
-  const disparoAtual = disparo && disparo.indice < disparo.fila.length
-    ? clientes.find((c) => c.id === disparo.fila[disparo.indice])
-    : null;
-
   return (
     <div className="container">
       <h1>Mensagens WhatsApp</h1>
       <p style={{ color: "#555", fontSize: 14 }}>
-        Edite o texto livremente, insira o cardápio da semana onde quiser, depois copie ou envie direto.
-        O rascunho é salvo automaticamente por semana.
+        Monte o texto, <b>copie</b> e cole na sua <b>lista de transmissão</b> do WhatsApp Business —
+        1 envio alcança todos de uma vez. O rascunho é salvo automaticamente por semana.
       </p>
       {error && <div className="error">{error}</div>}
       {aviso && <div className="card" style={{ background: "#dcfce7" }}>{aviso}</div>}
@@ -196,60 +144,6 @@ export default function Mensagens() {
         <pre style={{ whiteSpace: "pre-wrap", background: "#f8fafc", padding: 12, borderRadius: 8, fontSize: 13 }}>
           {texto || "(vazio)"}
         </pre>
-      </div>
-
-      <div className="card">
-        <h2>Disparo para todos os clientes</h2>
-        <p style={{ color: "#555", fontSize: 13 }}>
-          <b>Caminho mais rápido (WhatsApp Business):</b> copie o texto acima e cole na sua{" "}
-          <b>lista de transmissão</b> — 1 envio alcança todos de uma vez, grátis.
-          Abaixo, o disparo assistido cliente a cliente (ideal para confirmações individuais).
-        </p>
-        <div className="toolbar">
-          <button className="btn small secondary" onClick={() => marcarTodos(true)}>Selecionar todos</button>
-          <button className="btn small secondary" onClick={() => marcarTodos(false)}>Limpar seleção</button>
-          <span>{todosSelecionados().length} de {clientesValidos.length} selecionados</span>
-        </div>
-        {clientesSemFone.length > 0 && (
-          <p style={{ fontSize: 13, color: "#92400e" }}>
-            Sem telefone válido (ficam fora do disparo): {clientesSemFone.map((c) => c.nome).join(", ")}
-          </p>
-        )}
-        <table>
-          <thead><tr><th></th><th>Cliente</th><th>Telefone</th></tr></thead>
-          <tbody>
-            {clientesValidos.map((c) => (
-              <tr key={c.id}>
-                <td><input type="checkbox" style={{ width: "auto" }}
-                  checked={selecionados[c.id] !== false}
-                  onChange={(e) => { setSelecionados({ ...selecionados, [c.id]: e.target.checked }); setDisparo(null); }} /></td>
-                <td>{c.nome}</td>
-                <td>{c.telefone}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!disparo && (
-          <div className="toolbar" style={{ marginTop: 8 }}>
-            <button className="btn" onClick={iniciarDisparo}>Iniciar disparo</button>
-          </div>
-        )}
-        {disparo && disparoAtual && (
-          <div style={{ marginTop: 8, background: "#f0fdf4", padding: 12, borderRadius: 8 }}>
-            <p>Enviando <b>{disparo.indice + 1} de {disparo.fila.length}</b> — atual: <b>{disparoAtual.nome}</b></p>
-            <div className="toolbar">
-              <button className="btn" onClick={() => proximoDisparo(false)}>Enviar e abrir próximo</button>
-              <button className="btn secondary" onClick={() => proximoDisparo(true)}>Pular este</button>
-              <button className="btn small secondary" onClick={() => setDisparo(null)}>Encerrar</button>
-            </div>
-          </div>
-        )}
-        {disparo && !disparoAtual && (
-          <div style={{ marginTop: 8, background: "#dcfce7", padding: 12, borderRadius: 8 }}>
-            <p><b>Disparo concluído!</b> {disparo.fila.length} conversas abertas.</p>
-            <button className="btn small secondary" onClick={() => setDisparo(null)}>Fechar</button>
-          </div>
-        )}
       </div>
     </div>
   );
