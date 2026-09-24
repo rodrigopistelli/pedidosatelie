@@ -110,6 +110,14 @@ th { background: #f8fafc; }
   background: rgba(0,0,0,.5);
   z-index: 29;
 }
+@media print {
+  .sidebar, .topbar, .overlay { display: none !important; }
+  .nao-imprimir { display: none !important; }
+  .shell { display: block; }
+  .container { max-width: 100%; padding: 0; }
+  .card { box-shadow: none; margin: 0 0 12px; }
+  table { min-width: 0; font-size: 12px; }
+}
 @media (max-width: 860px) {
   .sidebar {
     position: fixed;

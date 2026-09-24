@@ -106,7 +106,7 @@ export default function Semanas() {
       <h1>Cardápio da Semana</h1>
       {error && <div className="error">{error}</div>}
 
-      <div className="card">
+      <div className="card nao-imprimir">
         <h2>{editId ? "Editar semana" : "Nova semana"}</h2>
         <form onSubmit={salvar}>
           <label>Título</label>
@@ -128,7 +128,7 @@ export default function Semanas() {
         </form>
       </div>
 
-      <div className="card">
+      <div className="card nao-imprimir">
         <h2>Semanas</h2>
         <table>
           <thead><tr><th></th><th>Título</th><th>Período</th><th>Status</th><th>Ações</th></tr></thead>
@@ -157,11 +157,12 @@ export default function Semanas() {
         <div className="card">
           <h2>{detalhe.titulo} — {STATUS[detalhe.status]}</h2>
           <p>Pedidos: <b>{detalhe.total_pedidos}</b> · Faturamento (não cancelados): <b>{formatBRL(detalhe.faturamento)}</b></p>
-          <div className="toolbar">
+          <div className="toolbar nao-imprimir">
             {detalhe.status === "rascunho" && <button className="btn small" onClick={() => mudarStatus(detalhe.id, "aberto")}>Abrir para encomendas</button>}
             {detalhe.status === "aberto" && <button className="btn small secondary" onClick={() => mudarStatus(detalhe.id, "fechado")}>Fechar semana</button>}
             {detalhe.status === "fechado" && <button className="btn small secondary" onClick={() => mudarStatus(detalhe.id, "aberto")}>Reabrir</button>}
           </div>
+          <div className="nao-imprimir">
           <h3>Pratos da semana</h3>
           <div className="toolbar">
             <select value={addPrato} onChange={(e) => setAddPrato(e.target.value)} style={{ maxWidth: 300 }}>
@@ -181,8 +182,9 @@ export default function Semanas() {
               ))}
             </tbody>
           </table>
+          </div>
           <h3>Relatório de pedidos</h3>
-          <div className="toolbar">
+          <div className="toolbar nao-imprimir">
             <button className="btn small" onClick={carregarRelatorio}>
               {relatorio ? "Ocultar relatório" : "Listar pedidos da semana"}
             </button>
